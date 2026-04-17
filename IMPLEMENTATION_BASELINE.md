@@ -64,8 +64,9 @@ Follow the phases in order. Keep each phase small and test before moving on.
   - [DONE] Courses
   - [DONE] Leaderboard
   - [DONE] Subscription
-  - [DONE] Admin Panel
+  - [DONE] Admin Panel (now role-aware: visible to admins only)
   - [DONE] Logout
+  - [DONE] Admins still see core learner nav links plus Admin Panel
 - Segment 5: Quick verification pass
   - [DONE] Opened key pages in browser and confirmed no include/path errors.
 
@@ -98,6 +99,51 @@ Follow the phases in order. Keep each phase small and test before moving on.
 
 ## Phase 2 - Authentication Flow
 
+<!-- PHASE 2 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 2 Segments and Progress
+
+- Segment 1: Registration flow in `register.php`
+  - [DONE] Validate first name, last name, email, and password.
+  - [DONE] Hash password using `password_hash()`.
+  - [DONE] Insert new user into `users` table using prepared statement.
+  - [DONE] Handle duplicate email with user-friendly message.
+- Segment 2: Login flow in `login.php`
+  - [DONE] Find user by email using prepared statement.
+  - [DONE] Verify password using `password_verify()`.
+  - [DONE] Store session values (`user_id`, `first_name`, `last_name`, `email`).
+  - [DONE] Redirect successful login by role (admin -> Admin Panel, learner -> dashboard).
+- Segment 3: Logout and index redirect flow
+  - [DONE] `logout.php` clears session and redirects to login.
+  - [DONE] `index.php` redirects by authentication state.
+- Segment 4: Auth UX adjustments from base system files
+  - [DONE] Added Login/Register links in shared navbar for guests.
+  - [DONE] Kept Logout link visible only for authenticated users.
+  - [DONE] Kept Admin Panel link visible only for authenticated users.
+  - [DONE] Added register call-to-action in login page.
+  - [DONE] Added login call-to-action in register page.
+- Segment 5: Schema-integrated role handling (`roles` + `user_roles`)
+  - [DONE] New registrations are assigned `learner` role in `user_roles`.
+  - [DONE] Login now loads roles from DB and sets admin session flag.
+  - [DONE] Admin pages now require admin role (direct URL access blocked for non-admin users).
+- Segment 6: Schema-integrated default account records
+  - [DONE] New registrations create default `user_xp` record (`total_xp=0`, `level=1`).
+  - [DONE] New registrations create default active `user_subscriptions` record on `Free` plan.
+- Segment 7: Quick verification pass
+  - [DONE] Browser test register -> login -> logout -> index redirect flow.
+  - [DONE] Browser test guest navbar vs authenticated navbar behavior.
+  - [DONE] Browser test learner account cannot open `admin/*.php` pages.
+  - [DONE] Browser test admin account can open `admin/*.php` pages.
+  - [DONE] Browser test new registration inserts rows in `user_roles`, `user_xp`, and `user_subscriptions`.
+
+### Phase 2 Progress Indicators
+
+- Completion: **100%**
+- Done now: full authentication flow, RBAC restrictions, and default account provisioning verified
+- Remaining: none
+- Next prompt should do: start Phase 3 (Dashboard and Core Read Pages)
+
 ### Tasks
 
 - Implement register logic in `register.php`:
@@ -117,6 +163,38 @@ Follow the phases in order. Keep each phase small and test before moving on.
 - Session-based redirect works.
 
 ## Phase 3 - Dashboard and Core Read Pages
+
+<!-- PHASE 3 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 3 Segments and Progress
+
+- Segment 1: Dashboard read implementation (`dashboard.php`)
+  - [DONE] Display logged-in user basic info from `users`.
+  - [DONE] Display current XP and level from `user_xp`.
+  - [DONE] Display enrolled courses from `course_enrollment` + `courses`.
+- Segment 2: Course read implementation (`course.php`)
+  - [DONE] Display available courses list.
+  - [DONE] Display selected course details (`course_id`, `title`, `description`, `difficulty`, `instructor_id`, `created_at`, `is_archived`).
+  - [DONE] Display course modules from `modules`.
+  - [DONE] Display lessons per module from `lessons`.
+- Segment 3: Leaderboard read implementation (`leaderboard.php`)
+  - [DONE] Display ranked users by XP using `users` + `user_xp` join.
+  - [DONE] Display rank, user fields, XP, level, and account status.
+- Segment 4: Shared read helpers and UI
+  - [DONE] Added reusable helper functions in `includes/functions.php` for dashboard/course/leaderboard queries.
+  - [DONE] Added simple table/section styling for readability.
+- Segment 5: Quick verification pass
+  - [TODO] Browser test dashboard shows user info, XP, and enrollments.
+  - [TODO] Browser test course page list + selected course modules/lessons.
+  - [TODO] Browser test leaderboard ordering by XP descending.
+
+### Phase 3 Progress Indicators
+
+- Completion: **90%**
+- Done now: core read pages are connected to DB and rendering real data
+- Remaining: browser verification and minor display adjustments if needed
+- Next prompt should do: run Phase 3 test checklist and close to 100%
 
 ### Tasks
 

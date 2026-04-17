@@ -1,9 +1,13 @@
 <?php
+require_once __DIR__ . '/auth.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 $basePath = '/kody';
+$isLoggedIn = checkAuth();
+$isUserAdmin = isAdmin();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,8 +25,15 @@ $basePath = '/kody';
         <a href="<?php echo $basePath; ?>/course.php">Courses</a>
         <a href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
         <a href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
-        <a href="<?php echo $basePath; ?>/admin/users_crud.php">Admin Panel</a>
-        <a href="<?php echo $basePath; ?>/logout.php">Logout</a>
+        <?php if ($isLoggedIn): ?>
+            <?php if ($isUserAdmin): ?>
+                <a href="<?php echo $basePath; ?>/admin/users_crud.php">Admin Panel</a>
+            <?php endif; ?>
+            <a href="<?php echo $basePath; ?>/logout.php">Logout</a>
+        <?php else: ?>
+            <a href="<?php echo $basePath; ?>/login.php">Login</a>
+            <a href="<?php echo $basePath; ?>/register.php">Register</a>
+        <?php endif; ?>
     </nav>
 </header>
 <main class="container">
