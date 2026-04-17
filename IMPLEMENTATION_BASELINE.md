@@ -46,6 +46,36 @@ Follow the phases in order. Keep each phase small and test before moving on.
 
 ## Phase 1 - Base System Files
 
+<!-- PHASE 1 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 1 Segments and Progress
+
+- Segment 1: Database + Auth base
+  - [DONE] `includes/db.php` configured with reusable `connectDB()`.
+  - [DONE] `includes/auth.php` has `checkAuth()`, `requireAuth()`, `getCurrentUser()`.
+- Segment 2: Shared reusable functions
+  - [DONE] `includes/functions.php` has starter reusable DB functions (`enrollUser`, `awardXP`, `getLeaderboard`).
+- Segment 3: Shared layout and assets
+  - [DONE] `includes/header.php` and `includes/footer.php` render shared layout.
+  - [DONE] CSS and JS linked through shared includes.
+- Segment 4: Required navigation links in header
+  - [DONE] Dashboard
+  - [DONE] Courses
+  - [DONE] Leaderboard
+  - [DONE] Subscription
+  - [DONE] Admin Panel
+  - [DONE] Logout
+- Segment 5: Quick verification pass
+  - [DONE] Opened key pages in browser and confirmed no include/path errors.
+
+### Phase 1 Progress Indicators
+
+- Completion: **100%**
+- Done now: all Phase 1 tasks including navigation and verification
+- Remaining: none
+- Next prompt should do: start Phase 2 (Authentication Flow)
+
 ### Tasks
 
 - Configure database connection in `includes/db.php`.

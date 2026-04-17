@@ -11,7 +11,7 @@ function checkAuth()
 function requireAuth()
 {
     if (!checkAuth()) {
-        header('Location: login.php');
+        header('Location: /kody/login.php');
         exit;
     }
 }
