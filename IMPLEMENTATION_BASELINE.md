@@ -185,16 +185,16 @@ Follow the phases in order. Keep each phase small and test before moving on.
   - [DONE] Added reusable helper functions in `includes/functions.php` for dashboard/course/leaderboard queries.
   - [DONE] Added simple table/section styling for readability.
 - Segment 5: Quick verification pass
-  - [TODO] Browser test dashboard shows user info, XP, and enrollments.
-  - [TODO] Browser test course page list + selected course modules/lessons.
-  - [TODO] Browser test leaderboard ordering by XP descending.
+  - [DONE] Browser test dashboard shows user info, XP, and enrollments.
+  - [DONE] Browser test course page list + selected course modules/lessons.
+  - [DONE] Browser test leaderboard ordering by XP descending.
 
 ### Phase 3 Progress Indicators
 
-- Completion: **90%**
-- Done now: core read pages are connected to DB and rendering real data
-- Remaining: browser verification and minor display adjustments if needed
-- Next prompt should do: run Phase 3 test checklist and close to 100%
+- Completion: **100%**
+- Done now: core read pages verified and connected to DB
+- Remaining: none
+- Next prompt should do: start Phase 4 (Enrollment and Progress)
 
 ### Tasks
 
@@ -210,6 +210,36 @@ Follow the phases in order. Keep each phase small and test before moving on.
 - Core READ screens are visible and connected to DB.
 
 ## Phase 4 - Enrollment and Progress
+
+<!-- PHASE 4 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 4 Segments and Progress
+
+- Segment 1: Enrollment action (`enroll.php`)
+  - [DONE] Added enrollment form with course selection.
+  - [DONE] Insert enrollment into `course_enrollment`.
+  - [DONE] Prevent duplicate enrollment for same `user_id + course_id`.
+  - [DONE] Display enrollment list with relevant fields (`enrollment_id`, `course_id`, `enrolled_at`, `completion_status`).
+- Segment 2: Progress page read + update (`progress.php`)
+  - [DONE] Display user progress rows from `user_progress`.
+  - [DONE] Show relevant fields (`progress_id`, `course_id`, `module_id`, `lesson_id`, `challenge_id`, `status`, `completed_at`).
+  - [DONE] Added status update action.
+  - [DONE] Update `completed_at` automatically when status becomes `completed`.
+- Segment 3: Shared helper functions (`includes/functions.php`)
+  - [DONE] Added reusable enrollment/progress helper queries and mutations.
+  - [DONE] Added option list helpers for courses/modules/lessons/challenges.
+- Segment 4: Quick verification pass
+  - [DONE] Browser test new enrollment insertion and duplicate protection.
+  - [DONE] Browser test progress add row and status updates.
+  - [DONE] Browser test `completed_at` value updates correctly.
+
+### Phase 4 Progress Indicators
+
+- Completion: **100%**
+- Done now: enrollment and progress flow verified and connected to DB
+- Remaining: none
+- Next prompt should do: start Phase 5 (Coding Submission and XP)
 
 ### Tasks
 
@@ -227,6 +257,40 @@ Follow the phases in order. Keep each phase small and test before moving on.
 
 ## Phase 5 - Coding Submission and XP
 
+<!-- PHASE 5 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 5 Segments and Progress
+
+- Segment 1: Submission form (`submit_code.php`)
+  - [DONE] Added challenge selection from `challenges`.
+  - [DONE] Added inputs for `language`, `source_code`, `execution_status`, and `score`.
+  - [DONE] Form posts to `process_submission.php`.
+- Segment 2: Submission processing (`process_submission.php`)
+  - [DONE] Insert into `submissions` with relevant fields (`challenge_id`, `user_id`, `source_code`, `language`, `execution_status`, `score`).
+  - [DONE] Supports statuses: `pending`, `passed`, `failed`, `error`.
+  - [DONE] Shows processing result summary.
+- Segment 3: XP and progress linkage
+  - [DONE] If status is `passed`, awards XP from challenge `xp_reward` to `user_xp`.
+  - [DONE] If status is `passed`, marks related challenge progress as `completed` in `user_progress`.
+  - [DONE] Creates progress row when challenge progress does not exist yet.
+- Segment 4: Shared helpers
+  - [DONE] Added `getChallengeList()` and `getChallengeById()` helpers.
+  - [DONE] Added `submitCode()` helper.
+  - [DONE] Added `markChallengeComplete()` helper.
+- Segment 5: Quick verification pass
+  - [DONE] Code-level navigation smoke audit completed and learner path to enrollment fixed.
+  - [TODO] Browser test submission insert for each status (`pending`, `passed`, `failed`, `error`).
+  - [TODO] Browser test XP increases only when status is `passed`.
+  - [TODO] Browser test progress row becomes `completed` with `completed_at` on pass.
+
+### Phase 5 Progress Indicators
+
+- Completion: **90%**
+- Done now: submission + processing + XP/progress linkage are implemented
+- Remaining: browser verification and minor display adjustments (if needed)
+- Next prompt should do: run Phase 5 test checklist and close to 100%
+
 ### Tasks
 
 - Build submission form in `submit_code.php`.
@@ -242,6 +306,26 @@ Follow the phases in order. Keep each phase small and test before moving on.
 
 ## Phase 5.5 - XP Logic Isolation
 
+<!-- PHASE 5.5 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 5.5 Segments and Progress
+
+- Segment 1: Reusable XP helper
+  - [DONE] `awardXP(user_id, xp)` is centralized in `includes/functions.php`.
+- Segment 2: Submission flow integration
+  - [DONE] `process_submission.php` calls `awardXP()` only when submission status is `passed`.
+- Segment 3: Quick verification pass
+  - [TODO] Browser test confirms XP does not change for `pending`, `failed`, and `error`.
+  - [TODO] Browser test confirms XP increases for `passed` using challenge `xp_reward`.
+
+### Phase 5.5 Progress Indicators
+
+- Completion: **90%**
+- Done now: XP logic is isolated and integrated in submission flow
+- Remaining: browser verification for XP edge cases
+- Next prompt should do: run XP behavior tests and close Phase 5.5 to 100%
+
 ### Tasks
 
 - Move XP logic into a reusable function:
@@ -253,6 +337,43 @@ Follow the phases in order. Keep each phase small and test before moving on.
 - XP system is reusable and consistent
 
 ## Phase 6 - Subscription and Payment Simulation
+
+<!-- PHASE 6 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 6 Segments and Progress
+
+- Segment 1: Subscription plan display (`subscription.php`)
+  - [DONE] Loaded plans from `subscription_plans`.
+  - [DONE] Displayed relevant fields (`plan_id`, `plan_name`, `price`, `billing_cycle`).
+  - [DONE] Added select-plan action to payment simulation page.
+- Segment 2: Current user subscription view (`subscription.php`)
+  - [DONE] Displayed latest user subscription with relevant fields (`subscription_id`, `plan_id`, `start_date`, `end_date`, `status`).
+  - [DONE] Joined plan details for readable display (`plan_name`, `price`, `billing_cycle`).
+- Segment 3: Payment simulation (`payment.php`)
+  - [DONE] Added selected-plan flow and payment form.
+  - [DONE] Simulated payment insertion in `payments` with relevant fields (`user_id`, `subscription_id`, `amount`, `payment_method`, `payment_status`, `paid_at`).
+  - [DONE] Set payment status to `completed` for simulation path.
+- Segment 4: Subscription create/update linkage
+  - [DONE] Added reusable `upsertUserSubscription()` to create or update `user_subscriptions`.
+  - [DONE] Set relevant subscription fields (`user_id`, `plan_id`, `start_date`, `end_date`, `status`).
+  - [DONE] Ensured payment references valid `subscription_id`.
+- Segment 5: Shared helpers (`includes/functions.php`)
+  - [DONE] Added `getSubscriptionPlans()`.
+  - [DONE] Added `getSubscriptionPlanById()`.
+  - [DONE] Added `getUserLatestSubscription()`.
+  - [DONE] Added `createPaymentRecord()`.
+- Segment 6: Quick verification pass
+  - [TODO] Browser test plan list renders from DB seed data.
+  - [TODO] Browser test payment creates a new `payments` row.
+  - [TODO] Browser test subscription row is created/updated correctly.
+
+### Phase 6 Progress Indicators
+
+- Completion: **90%**
+- Done now: subscription/payment simulation is implemented and DB-connected
+- Remaining: browser verification and minor UX polish (if needed)
+- Next prompt should do: run Phase 6 test checklist and close to 100%
 
 ### Tasks
 

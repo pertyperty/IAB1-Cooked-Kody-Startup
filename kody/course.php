@@ -19,6 +19,7 @@ if ($selectedCourseId > 0) {
 require_once __DIR__ . '/includes/header.php';
 ?>
 <h2>Course Page</h2>
+<p><a href="/kody/enroll.php">Go to Enrollment Page</a></p>
 
 <h3>Available Courses</h3>
 <?php if (count($allCourses) > 0): ?>

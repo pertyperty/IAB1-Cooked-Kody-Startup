@@ -13,6 +13,11 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 <h2>Dashboard</h2>
 <p class="notice">Welcome, <?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')); ?>.</p>
+<p>
+  <a href="/kody/enroll.php">Enroll in a Course</a> |
+  <a href="/kody/progress.php">View Progress</a> |
+  <a href="/kody/submit_code.php">Submit Code</a>
+</p>
 
 <h3>User Information</h3>
 <?php if ($user): ?>
@@ -64,6 +69,7 @@ require_once __DIR__ . '/includes/header.php';
   </table>
 <?php else: ?>
   <p>No enrolled courses yet.</p>
+  <p><a href="/kody/enroll.php">Start by enrolling in your first course</a>.</p>
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

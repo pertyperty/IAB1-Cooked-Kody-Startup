@@ -21,11 +21,14 @@ $isUserAdmin = isAdmin();
 <header class="site-header">
     <h1>Kody</h1>
     <nav>
-        <a href="<?php echo $basePath; ?>/dashboard.php">Dashboard</a>
-        <a href="<?php echo $basePath; ?>/course.php">Courses</a>
-        <a href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
-        <a href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
         <?php if ($isLoggedIn): ?>
+            <a href="<?php echo $basePath; ?>/dashboard.php">Dashboard</a>
+            <a href="<?php echo $basePath; ?>/course.php">Courses</a>
+            <a href="<?php echo $basePath; ?>/enroll.php">Enroll</a>
+            <a href="<?php echo $basePath; ?>/progress.php">Progress</a>
+            <a href="<?php echo $basePath; ?>/submit_code.php">Submit Code</a>
+            <a href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
+            <a href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
             <?php if ($isUserAdmin): ?>
                 <a href="<?php echo $basePath; ?>/admin/users_crud.php">Admin Panel</a>
             <?php endif; ?>
