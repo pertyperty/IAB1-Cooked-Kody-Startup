@@ -38,7 +38,44 @@ function requiredFields(array $input, array $fields): ?string
 
 function hashPasswordPrototype(string $password): string
 {
-    return hash('sha256', $password);
+    return password_hash($password, PASSWORD_DEFAULT);
+}
+
+function isLegacySha256Hash(string $storedHash): bool
+{
+    return preg_match('/^[a-f0-9]{64}$/i', $storedHash) === 1;
+}
+
+function verifyPasswordPrototype(string $plainPassword, string $storedHash): bool
+{
+    if ($storedHash === '') {
+        return false;
+    }
+
+    $hashInfo = password_get_info($storedHash);
+    if (($hashInfo['algo'] ?? null) !== null && (int) $hashInfo['algo'] !== 0) {
+        return password_verify($plainPassword, $storedHash);
+    }
+
+    if (isLegacySha256Hash($storedHash)) {
+        return hash_equals(strtolower($storedHash), hash('sha256', $plainPassword));
+    }
+
+    return false;
+}
+
+function passwordNeedsUpgrade(string $storedHash): bool
+{
+    if ($storedHash === '' || isLegacySha256Hash($storedHash)) {
+        return true;
+    }
+
+    $hashInfo = password_get_info($storedHash);
+    if (($hashInfo['algo'] ?? null) === null || (int) $hashInfo['algo'] === 0) {
+        return true;
+    }
+
+    return password_needs_rehash($storedHash, PASSWORD_DEFAULT);
 }
 
 function nowUtc(): string

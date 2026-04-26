@@ -1,4 +1,4 @@
-# Kody Website
+# Kody Working Website Demo
 
 Kody is now structured as a multi-page working website for the SRS instead of a single auth page plus one large workspace page.
 
@@ -23,7 +23,7 @@ The current build provides:
 
 ### Public pages
 
-- `public/index.php` - landing homepage
+- `public/index.php` - auth-first gateway (login + registration start page)
 - `public/login.php` - login
 - `public/register.php` - registration
 - `public/verify.php` - email verification
@@ -114,7 +114,7 @@ Open:
 
 ## Current Notes
 
-- Password hashing is still prototype-grade and should be upgraded to `password_hash` / `password_verify`.
+- Password handling now uses `password_hash` and `password_verify` with automatic upgrade from legacy SHA-256 seed hashes after successful login.
 - The backend is local-first and does not call the real external APIs yet.
 - The website is intended to show working end-to-end behavior using the local database and simulated provider states.
 - `IMPLEMENTATION.md` is the active iteration tracker and should be updated every pass.

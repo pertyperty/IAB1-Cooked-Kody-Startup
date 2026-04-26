@@ -12,12 +12,12 @@ This file tracks the current state of the Kody website and must be updated every
 
 ## Current Iteration Goal
 
-Convert Kody from a mostly single-page prototype into a more realistic multi-page working website while keeping external services simulated.
+Convert Kody from a mostly single-page prototype into a realistic multi-page working website demo while keeping external services simulated.
 
 ## Completed In This Iteration
 
 - Split public authentication into dedicated pages:
-  - `index.php`
+  - `index.php` (auth-first gateway with login and registration forms)
   - `login.php`
   - `register.php`
   - `verify.php`
@@ -53,6 +53,10 @@ Convert Kody from a mostly single-page prototype into a more realistic multi-pag
 - Added instructor-specific registration fields for verification at signup.
 - Moved contributor application into the learner profile flow.
 - Made the top navigation sticky.
+- Upgraded password security:
+  - new and reset passwords now use `password_hash`
+  - login checks use `password_verify`
+  - legacy SHA-256 seed hashes are auto-upgraded on successful login
 - Improved actual page interactions:
   - clickable course-module opening flow
   - clickable standalone module opening flow
@@ -86,9 +90,9 @@ Current focus:
 - add richer row-level actions from course/module/challenge/report/user tables
 - make content browsing and editing feel closer to a finished product
 
-## Phase 5. Security and Reliability Hardening (Pending)
+## Phase 5. Security and Reliability Hardening (In Progress)
 
-- replace prototype hashing with `password_hash` / `password_verify`
+- password hashing upgrade completed with backward compatibility
 - add CSRF protection
 - add stricter validation and error handling
 - review and tighten session safety

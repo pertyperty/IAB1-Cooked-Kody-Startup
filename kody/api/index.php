@@ -336,7 +336,7 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
             ], 423);
         }
 
-        if (!$user || $user['password_hash'] !== hashPasswordPrototype($password)) {
+        if (!$user || !verifyPasswordPrototype($password, (string) $user['password_hash'])) {
             registerFailedAttempt($pdo, $email, $user ? (int) $user['id'] : null);
             jsonResponse(false, 'Invalid email or password.', [], 401);
         }
@@ -356,6 +356,15 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
             'updated_at' => nowUtc(),
             'id' => (int) $user['id'],
         ]);
+
+        if (passwordNeedsUpgrade((string) $user['password_hash'])) {
+            $hashUpgrade = $pdo->prepare('UPDATE users SET password_hash = :password_hash, updated_at = :updated_at WHERE id = :id');
+            $hashUpgrade->execute([
+                'password_hash' => hashPasswordPrototype($password),
+                'updated_at' => nowUtc(),
+                'id' => (int) $user['id'],
+            ]);
+        }
 
         $sessionToken = bin2hex(random_bytes(24));
         $session = $pdo->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at, revoked_at, created_at)
@@ -575,7 +584,7 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
             jsonResponse(false, 'Current password is required for sensitive updates.', [], 422);
         }
 
-        if ($isSensitive && $userRow['password_hash'] !== hashPasswordPrototype($currentPassword)) {
+        if ($isSensitive && !verifyPasswordPrototype($currentPassword, (string) $userRow['password_hash'])) {
             jsonResponse(false, 'Current password is invalid.', [], 403);
         }
 
@@ -704,7 +713,7 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         $stmt->execute(['id' => $auth['id']]);
         $user = $stmt->fetch();
 
-        if (!$user || $user['password_hash'] !== hashPasswordPrototype((string) $input['password'])) {
+        if (!$user || !verifyPasswordPrototype((string) $input['password'], (string) $user['password_hash'])) {
             jsonResponse(false, 'Password confirmation failed.', [], 403);
         }
 
@@ -738,7 +747,7 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         $stmt->execute(['id' => $auth['id']]);
         $user = $stmt->fetch();
 
-        if (!$user || $user['password_hash'] !== hashPasswordPrototype((string) $input['password'])) {
+        if (!$user || !verifyPasswordPrototype((string) $input['password'], (string) $user['password_hash'])) {
             jsonResponse(false, 'Password confirmation failed.', [], 403);
         }
 
