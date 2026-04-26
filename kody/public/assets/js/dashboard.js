@@ -37,6 +37,7 @@ const PAGE_ACCESS = {
     home: 'learner,contributor,instructor,moderator,administrator',
     profile: 'learner,contributor,instructor,moderator,administrator',
     learn: 'learner,contributor,instructor,moderator,administrator',
+    module: 'learner,contributor,instructor,moderator,administrator',
     creator: 'contributor,instructor,administrator',
     rewards: 'learner,contributor,instructor,moderator,administrator',
     finance: 'learner,contributor,instructor,moderator,administrator',
@@ -109,6 +110,104 @@ function formatNumber(value) {
     return Number.isFinite(num) ? num.toLocaleString() : '0';
 }
 
+function formatLikes(value) {
+    return `${formatNumber(value)} like${Number(value || 0) === 1 ? '' : 's'}`;
+}
+
+function updateNavWallet(user) {
+    const walletNode = document.getElementById('nav-wallet-balance');
+    if (!walletNode || !user) {
+        return;
+    }
+
+    walletNode.textContent = `${formatNumber(user.kodebits_balance || 0)} KB`;
+}
+
+function redirectToModulePage(courseId, moduleId = null, isStandalone = false) {
+    const params = new URLSearchParams();
+    if (courseId) {
+        params.set('course_id', String(courseId));
+    }
+    if (moduleId) {
+        params.set('module_id', String(moduleId));
+    }
+    if (isStandalone) {
+        params.set('standalone', '1');
+    }
+
+    window.location.href = `module.php?${params.toString()}`;
+}
+
+async function redirectToFirstCourseModule(courseId) {
+    const moduleList = await apiCall('interaction', 'course_modules', { course_id: courseId });
+    const first = moduleList?.data?.rows?.[0];
+
+    if (!first?.id) {
+        setStatus('info', 'Enrollment completed, but this course has no published/active modules yet.');
+        return;
+    }
+
+    redirectToModulePage(courseId, Number(first.id));
+}
+
+async function loadModulePage() {
+    const page = document.body.getAttribute('data-page');
+    if (page !== 'module') {
+        return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const courseId = Number(params.get('course_id') || 0);
+    const moduleId = Number(params.get('module_id') || 0);
+    const standalone = params.get('standalone') === '1';
+
+    const heading = document.getElementById('module-page-heading');
+    if (!heading) {
+        return;
+    }
+
+    if (moduleId > 0 && standalone) {
+        const result = await runAction('interaction.access_standalone_module', () => apiCall('interaction', 'access_standalone_module', { module_id: moduleId }));
+        if (!result?.data?.row) {
+            return;
+        }
+
+        const row = result.data.row;
+        heading.textContent = row.title || 'Standalone Module';
+        renderModuleDetail(row.title, row.body_content, [row.module_type, row.status, `${row.kodebits_cost} KB`, formatLikes(row.likes_count || 0)]);
+        return;
+    }
+
+    if (courseId > 0 && moduleId > 0) {
+        const result = await runAction('interaction.access_course_module', () => apiCall('interaction', 'access_course_module', {
+            course_id: courseId,
+            module_id: moduleId,
+        }));
+        if (!result?.data?.row) {
+            return;
+        }
+
+        const row = result.data.row;
+        heading.textContent = row.title || 'Course Module';
+        renderModuleDetail(row.title, row.body_content, ['Course module', `Sequence ${row.sequence_no}`, row.status, formatLikes(row.likes_count || 0)]);
+        return;
+    }
+
+    if (courseId > 0 && moduleId <= 0) {
+        const listResult = await runAction('interaction.course_modules', () => apiCall('interaction', 'course_modules', { course_id: courseId }));
+        const first = listResult?.data?.rows?.[0];
+        if (!first?.id) {
+            setStatus('error', 'No published/active modules found for this course.');
+            return;
+        }
+
+        redirectToModulePage(courseId, Number(first.id));
+        return;
+    }
+
+    setStatus('error', 'No module was selected. Return to Learning and choose a module.');
+}
+
 async function apiCall(module, action, payload = {}, method = 'POST') {
     const isGet = method.toUpperCase() === 'GET';
     const response = await fetch(`${API_BASE}?module=${encodeURIComponent(module)}&action=${encodeURIComponent(action)}`, {
@@ -142,6 +241,106 @@ function applyRoleVisibility() {
     });
 }
 
+function decodeRowPayload(raw) {
+    if (!raw) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(decodeURIComponent(raw));
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+function prefillApiForm(module, action, values) {
+    const form = document.querySelector(`form.api-form[data-module="${module}"][data-action="${action}"]`);
+    if (!form || !values) {
+        return;
+    }
+
+    Object.entries(values).forEach(([key, value]) => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (!field || value === null || typeof value === 'undefined') {
+            return;
+        }
+
+        field.value = String(value);
+    });
+
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function getRowQuickActions(targetId, row) {
+    if (!row || typeof row !== 'object') {
+        return [];
+    }
+
+    if (targetId === 'content-courses-table') {
+        return [
+            { label: 'Edit', quick: 'row-course-edit', style: 'secondary' },
+            { label: 'Archive', quick: 'row-course-archive', style: 'danger', confirm: 'Archive this course?' },
+            { label: 'Delete', quick: 'row-course-delete', style: 'danger', confirm: 'Delete this course now?' },
+        ];
+    }
+
+    if (targetId === 'content-modules-table') {
+        return [
+            { label: 'View', quick: 'row-module-view', style: 'secondary' },
+            { label: 'Edit', quick: 'row-module-edit', style: 'secondary' },
+            { label: 'Archive', quick: 'row-module-archive', style: 'danger', confirm: 'Archive this module?' },
+            { label: 'Delete', quick: 'row-module-delete', style: 'danger', confirm: 'Delete this module now?' },
+        ];
+    }
+
+    if (targetId === 'creator-challenges-table') {
+        return [
+            { label: 'View', quick: 'row-challenge-view', style: 'secondary' },
+            { label: 'Edit', quick: 'row-challenge-edit', style: 'secondary' },
+            { label: 'Archive', quick: 'row-challenge-archive', style: 'danger', confirm: 'Archive this challenge?' },
+            { label: 'Delete', quick: 'row-challenge-delete', style: 'danger', confirm: 'Delete this challenge now?' },
+            { label: 'Submit', quick: 'row-challenge-submit', style: 'secondary' },
+        ];
+    }
+
+    if (targetId === 'requests-review-table') {
+        return [
+            { label: 'Approve', quick: 'row-request-approve' },
+            { label: 'Reject', quick: 'row-request-reject', style: 'danger' },
+        ];
+    }
+
+    if (targetId === 'credentials-review-table') {
+        return [
+            { label: 'Accept', quick: 'row-credential-accept' },
+            { label: 'Reject', quick: 'row-credential-reject', style: 'danger' },
+        ];
+    }
+
+    if (targetId === 'users-table') {
+        const actions = [
+            { label: 'Suspend', quick: 'row-user-suspend', style: 'danger' },
+            { label: 'Reinstate', quick: 'row-user-reinstate', style: 'secondary' },
+        ];
+
+        if (roleAllowed('administrator')) {
+            actions.push({ label: 'Fill Update', quick: 'row-user-fill-update', style: 'secondary' });
+        }
+
+        return actions;
+    }
+
+    if (targetId === 'reports-table') {
+        return [
+            { label: 'Archive Target', quick: 'row-report-archive', style: 'danger', confirm: 'Archive target content for this report?' },
+            { label: 'Reject Report', quick: 'row-report-reject', style: 'secondary' },
+        ];
+    }
+
+    return [];
+}
+
 function renderTable(targetId, rows, emptyMessage = 'No records found.') {
     const target = document.getElementById(targetId);
     if (!target) {
@@ -154,9 +353,23 @@ function renderTable(targetId, rows, emptyMessage = 'No records found.') {
     }
 
     const headers = Object.keys(rows[0]);
+    const includeActions = rows.some((row) => getRowQuickActions(targetId, row).length > 0);
     const headerHtml = headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('');
-    const bodyHtml = rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('');
-    target.innerHTML = `<table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+
+    const bodyHtml = rows.map((row) => {
+        const encodedRow = encodeURIComponent(JSON.stringify(row));
+        const actionButtons = getRowQuickActions(targetId, row).map((item) => {
+            const styleClass = item.style || '';
+            const confirmAttr = item.confirm ? ` data-confirm="${escapeHtml(item.confirm)}"` : '';
+            return `<button type="button" class="row-action-btn ${styleClass}" data-quick="${escapeHtml(item.quick)}" data-row="${escapeHtml(encodedRow)}"${confirmAttr}>${escapeHtml(item.label)}</button>`;
+        }).join('');
+
+        const actionCell = includeActions ? `<td><div class="table-action-group">${actionButtons}</div></td>` : '';
+        return `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}${actionCell}</tr>`;
+    }).join('');
+
+    const actionHeader = includeActions ? '<th>actions</th>' : '';
+    target.innerHTML = `<table><thead><tr>${headerHtml}${actionHeader}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
 }
 
 function renderNotifications(rows) {
@@ -228,6 +441,8 @@ function renderProfile(user) {
             </dl>
         `;
     }
+
+    updateNavWallet(user);
 }
 
 function renderRolePermissions(role) {
@@ -276,6 +491,35 @@ function renderMetricCards(summary, user) {
     `).join('');
 }
 
+function renderHomeShortcuts() {
+    const target = document.getElementById('home-shortcuts');
+    if (!target) {
+        return;
+    }
+
+    const links = [
+        { href: 'learn.php', title: 'Learning Hub', copy: 'Browse courses, modules, and challenges.' },
+        { href: 'profile.php', title: 'Profile Settings', copy: 'Manage account updates and role requests.' },
+        { href: 'finance.php', title: 'Finance and Wallet', copy: 'Purchase KodeBits and view transactions.' },
+        { href: 'rewards.php', title: 'Rewards and Leaderboard', copy: 'Check rankings and gamification flows.' },
+    ];
+
+    if (roleAllowed('contributor,instructor,administrator')) {
+        links.push({ href: 'creator.php', title: 'Creator Workspace', copy: 'Create and manage courses, modules, and challenges.' });
+    }
+
+    if (roleAllowed('moderator,administrator')) {
+        links.push({ href: 'governance.php', title: 'Governance Center', copy: 'Review reports, users, and moderation queues.' });
+    }
+
+    target.innerHTML = links.map((item) => `
+        <a class="home-shortcut-card" href="${escapeHtml(item.href)}">
+            <strong>${escapeHtml(item.title)}</strong>
+            <p>${escapeHtml(item.copy)}</p>
+        </a>
+    `).join('');
+}
+
 function renderModuleDetail(title, body, meta) {
     const target = document.getElementById('module-reader');
     if (!target) {
@@ -314,6 +558,7 @@ function renderCourseModules(rows, courseId = null) {
                 <span class="pill">Sequence ${escapeHtml(row.sequence_no)}</span>
                 <span class="pill">${escapeHtml(row.difficulty_level || 'Module')}</span>
                 <span class="pill">${escapeHtml(row.status)}</span>
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
             </div>
             <div class="inline-actions">
                 <button type="button" data-quick="access-course-module" data-course-id="${escapeHtml(courseId || '')}" data-module-id="${escapeHtml(row.id)}">Open Module</button>
@@ -372,9 +617,10 @@ function renderCourseCatalog(rows) {
                 <span class="pill">${escapeHtml(row.course_type)}</span>
                 <span class="pill">${escapeHtml(row.status)}</span>
                 <span class="pill">${escapeHtml(formatNumber(row.kodebits_cost))} KB</span>
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
             </div>
             <div class="inline-actions">
-                <button type="button" data-quick="enroll-course" data-course-id="${escapeHtml(row.id)}">Enroll</button>
+                <button type="button" data-quick="enroll-course" data-course-id="${escapeHtml(row.id)}" data-course-type="${escapeHtml(row.course_type)}" data-course-cost="${escapeHtml(row.kodebits_cost)}" data-course-title="${escapeHtml(row.title)}">Enroll</button>
                 <button type="button" class="secondary" data-quick="view-course-modules" data-course-id="${escapeHtml(row.id)}">View Modules</button>
                 <button type="button" class="secondary" data-quick="react" data-content-type="course" data-content-id="${escapeHtml(row.id)}">Like</button>
             </div>
@@ -402,6 +648,7 @@ function renderStandaloneModules(rows) {
             <div class="pill-row">
                 <span class="pill">${escapeHtml(row.difficulty_level)}</span>
                 <span class="pill">${escapeHtml(formatNumber(row.kodebits_cost))} KB</span>
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
             </div>
             <div class="inline-actions">
                 <button type="button" data-quick="access-standalone-module" data-module-id="${escapeHtml(row.id)}">Access Module</button>
@@ -432,6 +679,7 @@ function renderChallengeCatalog(rows) {
                 <span class="pill">${escapeHtml(row.difficulty_level)}</span>
                 <span class="pill">${escapeHtml(row.status)}</span>
                 <span class="pill">${escapeHtml(formatNumber(row.kodebits_cost))} KB</span>
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
             </div>
             <div class="inline-actions">
                 <button type="button" data-quick="prefill-challenge" data-challenge-id="${escapeHtml(row.id)}">Participate</button>
@@ -520,6 +768,7 @@ async function loadOverview() {
     renderProfile(meRes.data.user);
     renderRolePermissions(meRes.data.user.role);
     renderMetricCards(summaryRes.data.summary, meRes.data.user);
+    renderHomeShortcuts();
     renderTable('learning-table', learningRes.data.rows, 'You do not have any enrollments yet.');
     renderNotifications(notificationsRes.data.rows);
 }
@@ -659,13 +908,35 @@ async function refreshCurrentPage() {
 
 async function handleQuickAction(button) {
     const action = button.getAttribute('data-quick');
+    const row = decodeRowPayload(button.getAttribute('data-row'));
+    const confirmMessage = button.getAttribute('data-confirm');
+
+    if (confirmMessage) {
+        const confirmed = await openConfirmModal(confirmMessage);
+        if (!confirmed) {
+            return;
+        }
+    }
 
     if (action === 'enroll-course') {
         const courseId = Number(button.getAttribute('data-course-id'));
+        const courseType = String(button.getAttribute('data-course-type') || 'free').toLowerCase();
+        const courseCost = Number(button.getAttribute('data-course-cost') || 0);
+        const courseTitle = String(button.getAttribute('data-course-title') || 'course');
+        const currentBalance = Number(state.auth?.user?.kodebits_balance || 0);
+
         prefillField('#enroll-form input[name="course_id"]', courseId);
+
+        if (courseType === 'premium' && courseCost > 0) {
+            const confirmed = await openConfirmModal(`Premium enrollment: ${courseTitle} costs ${formatNumber(courseCost)} KB. Current wallet: ${formatNumber(currentBalance)} KB. Continue?`);
+            if (!confirmed) {
+                return;
+            }
+        }
+
         const result = await runAction('interaction.enroll_course', () => apiCall('interaction', 'enroll_course', { course_id: courseId }));
         if (result) {
-            await refreshCurrentPage();
+            await redirectToFirstCourseModule(courseId);
         }
         return;
     }
@@ -685,26 +956,14 @@ async function handleQuickAction(button) {
         const moduleId = Number(button.getAttribute('data-module-id'));
         prefillField('#course-access-form input[name="course_id"]', courseId);
         prefillField('#course-access-form input[name="module_id"]', moduleId);
-        const result = await runAction('interaction.access_course_module', () => apiCall('interaction', 'access_course_module', {
-            course_id: courseId,
-            module_id: moduleId,
-        }));
-        if (result?.data?.row) {
-            const row = result.data.row;
-            renderModuleDetail(row.title, row.body_content, ['Course module', `Sequence ${row.sequence_no}`, row.status]);
-        }
+        redirectToModulePage(courseId, moduleId);
         return;
     }
 
     if (action === 'access-standalone-module') {
         const moduleId = Number(button.getAttribute('data-module-id'));
         prefillField('#standalone-access-form input[name="module_id"]', moduleId);
-        const result = await runAction('interaction.access_standalone_module', () => apiCall('interaction', 'access_standalone_module', { module_id: moduleId }));
-        if (result?.data?.row) {
-            const row = result.data.row;
-            renderModuleDetail(row.title, row.body_content, [row.module_type, row.status, `${row.kodebits_cost} KB`]);
-            await refreshCurrentPage();
-        }
+        redirectToModulePage(null, moduleId, true);
         return;
     }
 
@@ -737,6 +996,243 @@ async function handleQuickAction(button) {
         const packageId = Number(button.getAttribute('data-package-id'));
         prefillField('form[data-module="finance"][data-action="purchase"] input[name="package_id"]', packageId);
         const result = await runAction('finance.purchase', () => apiCall('finance', 'purchase', { package_id: packageId }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-course-edit' && row) {
+        prefillApiForm('content', 'edit_course', {
+            course_id: row.id,
+            title: row.title,
+            description: row.description,
+            status: row.status,
+        });
+        setStatus('info', `Course ${escapeHtml(row.id)} loaded into the edit form.`);
+        return;
+    }
+
+    if (action === 'row-course-archive' && row) {
+        const result = await runAction('content.archive_course', () => apiCall('content', 'archive_course', { course_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-course-delete' && row) {
+        const result = await runAction('content.delete_course', () => apiCall('content', 'delete_course', { course_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-module-edit' && row) {
+        prefillApiForm('content', 'edit_module', {
+            module_id: row.id,
+            title: row.title,
+            body_content: row.body_content || '',
+        });
+        setStatus('info', `Module ${escapeHtml(row.id)} loaded into the edit form.`);
+        return;
+    }
+
+    if (action === 'row-module-view' && row) {
+        renderModuleDetail(row.title, row.body_content || 'No content is available in this module record yet.', [
+            row.module_type || 'module',
+            row.difficulty_level || 'difficulty n/a',
+            row.status || 'status n/a',
+            formatLikes(row.likes_count || 0),
+        ]);
+
+        const creatorViewer = document.getElementById('creator-content-viewer');
+        if (creatorViewer) {
+            creatorViewer.innerHTML = `
+                <article class="detail-card">
+                    <h3>${escapeHtml(row.title)}</h3>
+                    <p>${escapeHtml(row.body_content || 'No content is available in this module record yet.')}</p>
+                    <div class="pill-row">
+                        <span class="pill">Module #${escapeHtml(row.id)}</span>
+                        <span class="pill">${escapeHtml(row.module_type || 'module')}</span>
+                        <span class="pill">${escapeHtml(row.difficulty_level || 'difficulty n/a')}</span>
+                        <span class="pill">${escapeHtml(row.status || 'status n/a')}</span>
+                        <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
+                    </div>
+                </article>
+            `;
+        }
+        return;
+    }
+
+    if (action === 'row-module-archive' && row) {
+        const result = await runAction('content.archive_module', () => apiCall('content', 'archive_module', { module_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-module-delete' && row) {
+        const result = await runAction('content.delete_module', () => apiCall('content', 'delete_module', { module_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-challenge-edit' && row) {
+        prefillApiForm('challenge', 'edit', {
+            challenge_id: row.id,
+            title: row.title,
+        });
+        setStatus('info', `Challenge ${escapeHtml(row.id)} loaded into the edit form.`);
+        return;
+    }
+
+    if (action === 'row-challenge-view' && row) {
+        const creatorViewer = document.getElementById('creator-content-viewer');
+        if (creatorViewer) {
+            creatorViewer.innerHTML = `
+                <article class="detail-card">
+                    <h3>${escapeHtml(row.title)}</h3>
+                    <p>${escapeHtml(row.prompt_text || 'No challenge prompt available in this row.')}</p>
+                    <div class="pill-row">
+                        <span class="pill">Challenge #${escapeHtml(row.id)}</span>
+                        <span class="pill">${escapeHtml(row.difficulty_level || 'difficulty n/a')}</span>
+                        <span class="pill">${escapeHtml(row.status || 'status n/a')}</span>
+                        <span class="pill">${escapeHtml(row.language_scope || 'language n/a')}</span>
+                        <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
+                    </div>
+                </article>
+            `;
+        }
+
+        setStatus('info', `Challenge ${escapeHtml(row.id)} loaded in creator content viewer.`);
+        return;
+    }
+
+    if (action === 'row-challenge-archive' && row) {
+        const result = await runAction('challenge.archive', () => apiCall('challenge', 'archive', { challenge_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-challenge-delete' && row) {
+        const result = await runAction('challenge.delete', () => apiCall('challenge', 'delete', { challenge_id: Number(row.id) }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-challenge-submit' && row) {
+        prefillApiForm('challenge', 'submit', { challenge_id: row.id });
+        setStatus('info', `Challenge ${escapeHtml(row.id)} loaded into the submission form.`);
+        return;
+    }
+
+    if (action === 'row-request-approve' && row) {
+        const result = await runAction('admin.update_request approve', () => apiCall('admin', 'update_request', {
+            request_id: Number(row.id),
+            status: 'Approved',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-request-reject' && row) {
+        const result = await runAction('admin.update_request reject', () => apiCall('admin', 'update_request', {
+            request_id: Number(row.id),
+            status: 'Rejected',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-credential-accept' && row) {
+        const result = await runAction('admin.verify_instructor_credentials accept', () => apiCall('admin', 'verify_instructor_credentials', {
+            credential_id: Number(row.id),
+            verification_status: 'Accepted',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-credential-reject' && row) {
+        const result = await runAction('admin.verify_instructor_credentials reject', () => apiCall('admin', 'verify_instructor_credentials', {
+            credential_id: Number(row.id),
+            verification_status: 'Rejected',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-user-suspend' && row) {
+        const result = await runAction('admin.suspend_user', () => apiCall('admin', 'suspend_user', {
+            user_id: Number(row.id),
+            notes: 'Suspended from table action.',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-user-reinstate' && row) {
+        const result = await runAction('admin.reinstate_user', () => apiCall('admin', 'reinstate_user', {
+            user_id: Number(row.id),
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-user-fill-update' && row) {
+        prefillApiForm('admin', 'update_user_account', {
+            user_id: row.id,
+            full_name: row.full_name,
+            primary_role: row.primary_role,
+            status: row.status,
+        });
+        setStatus('info', `User ${escapeHtml(row.id)} loaded into update form.`);
+        return;
+    }
+
+    if (action === 'row-report-archive' && row) {
+        const result = await runAction('admin.moderate_content archive', () => apiCall('admin', 'moderate_content', {
+            report_id: Number(row.id),
+            target_type: row.content_type,
+            target_id: Number(row.content_id),
+            action_type: 'archive',
+            notes: 'Archived using row action.',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-report-reject' && row) {
+        const result = await runAction('admin.moderate_content reject', () => apiCall('admin', 'moderate_content', {
+            report_id: Number(row.id),
+            target_type: row.content_type,
+            target_id: Number(row.content_id),
+            action_type: 'reject',
+            notes: 'Rejected using row action.',
+        }));
         if (result) {
             await refreshCurrentPage();
         }
@@ -825,7 +1321,18 @@ function setupForms() {
 
             if (module === 'interaction' && action === 'access_course_module' && result?.data?.row) {
                 const row = result.data.row;
-                renderModuleDetail(row.title, row.body_content, ['Course module', `Sequence ${row.sequence_no}`, row.status]);
+                redirectToModulePage(Number(payload.course_id || 0), Number(payload.module_id || 0));
+                return;
+            }
+
+            if (module === 'interaction' && action === 'access_standalone_module' && result?.data?.row) {
+                redirectToModulePage(null, Number(payload.module_id || 0), true);
+                return;
+            }
+
+            if (module === 'interaction' && action === 'enroll_course') {
+                await redirectToFirstCourseModule(Number(payload.course_id || 0));
+                return;
             }
 
             if (module === 'interaction' && action === 'view_feedback' && result?.data?.row) {
@@ -893,6 +1400,7 @@ async function bootstrap() {
     applyRoleVisibility();
 
     await refreshCurrentPage();
+    await loadModulePage();
 }
 
 bootstrap();

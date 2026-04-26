@@ -80,6 +80,24 @@ function applyRuntimeMigrations(PDO $pdo): void
     }
 }
 
+function assertValidEmail(string $email, string $field = 'email'): void
+{
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        jsonResponse(false, 'Invalid email format.', ['field' => $field], 422);
+    }
+}
+
+function assertStrongPassword(string $password, string $field = 'password'): void
+{
+    if (strlen($password) < 8) {
+        jsonResponse(false, 'Password must be at least 8 characters.', ['field' => $field], 422);
+    }
+
+    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+        jsonResponse(false, 'Password must include letters and numbers.', ['field' => $field], 422);
+    }
+}
+
 function learnerPlus(): array
 {
     return [ROLE_LEARNER, ROLE_CONTRIBUTOR, ROLE_INSTRUCTOR, ROLE_MODERATOR, ROLE_ADMIN];
@@ -187,6 +205,13 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         }
 
         $email = strtolower(trim((string) $input['email']));
+        assertValidEmail($email);
+        assertStrongPassword((string) $input['password']);
+
+        if (strlen(trim((string) $input['full_name'])) < 2) {
+            jsonResponse(false, 'Full name must be at least 2 characters.', ['field' => 'full_name'], 422);
+        }
+
         $requestedRole = strtolower(trim((string) ($input['requested_role'] ?? ROLE_LEARNER)));
         if (!in_array($requestedRole, [ROLE_LEARNER, ROLE_INSTRUCTOR], true)) {
             $requestedRole = ROLE_LEARNER;
@@ -404,6 +429,7 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         }
 
         $email = strtolower(trim((string) $input['email']));
+        assertValidEmail($email);
         $stmt = $pdo->prepare('SELECT id, primary_role FROM users WHERE email = :email LIMIT 1');
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
@@ -437,6 +463,8 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         }
 
         $stmt = $pdo->prepare('SELECT id, user_id, expires_at, used_at FROM email_tokens WHERE token = :token AND token_type = :token_type LIMIT 1');
+        assertStrongPassword((string) $input['new_password'], 'new_password');
+
         $stmt->execute([
             'token' => trim((string) $input['token']),
             'token_type' => 'recover',
@@ -580,6 +608,15 @@ function handleAuth(PDO $pdo, string $action, array $input, ?array $auth): void
         }
 
         $isSensitive = $newEmail !== '' || $newPassword !== '';
+
+        if ($newEmail !== '') {
+            assertValidEmail($newEmail, 'new_email');
+        }
+
+        if ($newPassword !== '') {
+            assertStrongPassword($newPassword, 'new_password');
+        }
+
         if ($isSensitive && $currentPassword === '') {
             jsonResponse(false, 'Current password is required for sensitive updates.', [], 422);
         }
@@ -847,7 +884,8 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
 {
     if ($action === 'list_courses') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query('SELECT c.id, c.title, c.description, c.course_type, c.kodebits_cost, c.status, c.created_by, u.full_name AS creator_name
+        $rows = $pdo->query('SELECT c.id, c.title, c.description, c.course_type, c.kodebits_cost, c.status, c.created_by, u.full_name AS creator_name,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "course" AND cr.content_id = c.id AND cr.reaction_value = "like"), 0) AS likes_count
             FROM courses c
             JOIN users u ON u.id = c.created_by
             ORDER BY c.id DESC')->fetchAll();
@@ -856,7 +894,8 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
 
     if ($action === 'list_modules') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query('SELECT lm.id, lm.title, lm.module_type, lm.difficulty_level, lm.status, lm.kodebits_cost, lm.created_by, u.full_name AS creator_name
+        $rows = $pdo->query('SELECT lm.id, lm.title, lm.module_type, lm.difficulty_level, lm.status, lm.kodebits_cost, lm.created_by, u.full_name AS creator_name,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "module" AND cr.content_id = lm.id AND cr.reaction_value = "like"), 0) AS likes_count
             FROM learning_modules lm
             JOIN users u ON u.id = lm.created_by
             ORDER BY lm.id DESC')->fetchAll();
@@ -1029,6 +1068,26 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
             $params['body_content'] = trim((string) $input['body_content']);
         }
 
+        if (isset($input['module_type']) && trim((string) $input['module_type']) !== '') {
+            $fields[] = 'module_type = :module_type';
+            $params['module_type'] = trim((string) $input['module_type']);
+        }
+
+        if (isset($input['difficulty_level']) && trim((string) $input['difficulty_level']) !== '') {
+            $fields[] = 'difficulty_level = :difficulty_level';
+            $params['difficulty_level'] = trim((string) $input['difficulty_level']);
+        }
+
+        if (isset($input['kodebits_cost']) && trim((string) $input['kodebits_cost']) !== '') {
+            $fields[] = 'kodebits_cost = :kodebits_cost';
+            $params['kodebits_cost'] = (int) $input['kodebits_cost'];
+        }
+
+        if (isset($input['status']) && trim((string) $input['status']) !== '') {
+            $fields[] = 'status = :status';
+            $params['status'] = trim((string) $input['status']);
+        }
+
         if (count($fields) === 0) {
             jsonResponse(false, 'No update fields provided.', [], 422);
         }
@@ -1133,11 +1192,66 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
 {
     if ($action === 'list') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query('SELECT c.id, c.title, c.difficulty_level, c.status, c.language_scope, c.kodebits_cost, c.created_by, u.full_name AS creator_name
+        $rows = $pdo->query('SELECT c.id, c.title, c.prompt_text, c.difficulty_level, c.status, c.language_scope, c.time_limit_ms, c.memory_limit_kb, c.kodebits_cost, c.created_by, u.full_name AS creator_name,
+            ca.review_status,
+            ca.review_notes,
+            ca.reviewed_at,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "challenge" AND cr.content_id = c.id AND cr.reaction_value = "like"), 0) AS likes_count
             FROM code_challenges c
             JOIN users u ON u.id = c.created_by
+            LEFT JOIN challenge_approvals ca ON ca.challenge_id = c.id
             ORDER BY c.id DESC')->fetchAll();
         jsonResponse(true, 'Challenges loaded.', ['rows' => $rows]);
+    }
+
+    if ($action === 'review') {
+        requireRoles($auth, moderatorPlus());
+        $missing = requiredFields($input, ['challenge_id', 'review_status']);
+        if ($missing !== null) {
+            jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
+        }
+
+        $challengeId = (int) $input['challenge_id'];
+        $reviewStatus = ucfirst(strtolower(trim((string) $input['review_status'])));
+        if (!in_array($reviewStatus, ['Approved', 'Rejected'], true)) {
+            jsonResponse(false, 'Invalid review status.', ['review_status' => $reviewStatus], 422);
+        }
+
+        $targetChallengeStatus = $reviewStatus === 'Approved' ? 'Approved' : 'UnderReview';
+
+        $pdo->beginTransaction();
+
+        $statusUpdate = $pdo->prepare('UPDATE code_challenges SET status = :status, updated_at = :updated_at WHERE id = :id');
+        $statusUpdate->execute([
+            'status' => $targetChallengeStatus,
+            'updated_at' => nowUtc(),
+            'id' => $challengeId,
+        ]);
+
+        if ($statusUpdate->rowCount() === 0) {
+            $pdo->rollBack();
+            jsonResponse(false, 'Challenge not found.', [], 404);
+        }
+
+        $approval = $pdo->prepare('INSERT INTO challenge_approvals (challenge_id, reviewed_by, review_status, review_notes, reviewed_at)
+            VALUES (:challenge_id, :reviewed_by, :review_status, :review_notes, :reviewed_at)
+            ON DUPLICATE KEY UPDATE review_status = VALUES(review_status), review_notes = VALUES(review_notes), reviewed_at = VALUES(reviewed_at)');
+        $approval->execute([
+            'challenge_id' => $challengeId,
+            'reviewed_by' => $auth['id'],
+            'review_status' => $reviewStatus,
+            'review_notes' => trim((string) ($input['review_notes'] ?? 'Reviewed from governance interface.')),
+            'reviewed_at' => nowUtc(),
+        ]);
+
+        writeAudit($pdo, $auth['id'], 'review_challenge', 'code_challenges', (string) $challengeId, null, ['review_status' => $reviewStatus]);
+        $pdo->commit();
+
+        jsonResponse(true, 'Challenge review decision applied.', [
+            'challenge_id' => $challengeId,
+            'review_status' => $reviewStatus,
+            'status' => $targetChallengeStatus,
+        ]);
     }
 
     if ($action === 'create') {
@@ -1188,6 +1302,36 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
         if (isset($input['prompt_text']) && trim((string) $input['prompt_text']) !== '') {
             $fields[] = 'prompt_text = :prompt_text';
             $params['prompt_text'] = trim((string) $input['prompt_text']);
+        }
+
+        if (isset($input['difficulty_level']) && trim((string) $input['difficulty_level']) !== '') {
+            $fields[] = 'difficulty_level = :difficulty_level';
+            $params['difficulty_level'] = trim((string) $input['difficulty_level']);
+        }
+
+        if (isset($input['language_scope']) && trim((string) $input['language_scope']) !== '') {
+            $fields[] = 'language_scope = :language_scope';
+            $params['language_scope'] = trim((string) $input['language_scope']);
+        }
+
+        if (isset($input['time_limit_ms']) && trim((string) $input['time_limit_ms']) !== '') {
+            $fields[] = 'time_limit_ms = :time_limit_ms';
+            $params['time_limit_ms'] = (int) $input['time_limit_ms'];
+        }
+
+        if (isset($input['memory_limit_kb']) && trim((string) $input['memory_limit_kb']) !== '') {
+            $fields[] = 'memory_limit_kb = :memory_limit_kb';
+            $params['memory_limit_kb'] = (int) $input['memory_limit_kb'];
+        }
+
+        if (isset($input['kodebits_cost']) && trim((string) $input['kodebits_cost']) !== '') {
+            $fields[] = 'kodebits_cost = :kodebits_cost';
+            $params['kodebits_cost'] = (int) $input['kodebits_cost'];
+        }
+
+        if (isset($input['status']) && trim((string) $input['status']) !== '') {
+            $fields[] = 'status = :status';
+            $params['status'] = trim((string) $input['status']);
         }
 
         if (count($fields) === 0) {
@@ -1598,22 +1742,31 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
 {
     if ($action === 'browse_courses') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query("SELECT id, title, description, course_type, kodebits_cost, status FROM courses WHERE status IN ('Published','Active') ORDER BY id DESC")->fetchAll();
+        $rows = $pdo->query("SELECT c.id, c.title, c.description, c.course_type, c.kodebits_cost, c.status,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = 'course' AND cr.content_id = c.id AND cr.reaction_value = 'like'), 0) AS likes_count
+            FROM courses c
+            WHERE c.status IN ('Published','Active')
+            ORDER BY c.id DESC")->fetchAll();
         jsonResponse(true, 'Courses loaded for browsing.', ['rows' => $rows]);
     }
 
     if ($action === 'standalone_modules') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query("SELECT id, title, body_content, difficulty_level, kodebits_cost, status
-            FROM learning_modules
-            WHERE module_type = 'standalone' AND status IN ('Published','Active')
-            ORDER BY id DESC")->fetchAll();
+        $rows = $pdo->query("SELECT lm.id, lm.title, lm.body_content, lm.difficulty_level, lm.kodebits_cost, lm.status,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = 'module' AND cr.content_id = lm.id AND cr.reaction_value = 'like'), 0) AS likes_count
+            FROM learning_modules lm
+            WHERE lm.module_type = 'standalone' AND lm.status IN ('Published','Active')
+            ORDER BY lm.id DESC")->fetchAll();
         jsonResponse(true, 'Standalone modules loaded.', ['rows' => $rows]);
     }
 
     if ($action === 'browse_challenges') {
         requireRoles($auth, learnerPlus());
-        $rows = $pdo->query("SELECT id, title, difficulty_level, status, language_scope, kodebits_cost FROM code_challenges WHERE status IN ('Approved','Published') ORDER BY id DESC")->fetchAll();
+        $rows = $pdo->query("SELECT c.id, c.title, c.difficulty_level, c.status, c.language_scope, c.kodebits_cost,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = 'challenge' AND cr.content_id = c.id AND cr.reaction_value = 'like'), 0) AS likes_count
+            FROM code_challenges c
+            WHERE c.status IN ('Approved','Published')
+            ORDER BY c.id DESC")->fetchAll();
         jsonResponse(true, 'Challenges loaded for browsing.', ['rows' => $rows]);
     }
 
@@ -1639,7 +1792,16 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
 
         $pdo->beginTransaction();
 
-        if ((string) $course['course_type'] === 'premium' && (int) $course['kodebits_cost'] > 0) {
+        $existingStmt = $pdo->prepare('SELECT id, enrollment_status FROM enrollments WHERE user_id = :user_id AND course_id = :course_id LIMIT 1 FOR UPDATE');
+        $existingStmt->execute([
+            'user_id' => $auth['id'],
+            'course_id' => $courseId,
+        ]);
+        $existing = $existingStmt->fetch();
+
+        $alreadyEnrolledActive = $existing && (string) $existing['enrollment_status'] === 'Active';
+
+        if (!$existing && (string) $course['course_type'] === 'premium' && (int) $course['kodebits_cost'] > 0) {
             spendKodebits($pdo, $auth['id'], (int) $course['kodebits_cost'], 'course_enroll', (string) $courseId);
         }
 
@@ -1657,7 +1819,11 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
         writeAudit($pdo, $auth['id'], 'enroll_course', 'enrollments', $auth['id'] . ':' . $courseId, null, ['course_id' => $courseId]);
         $pdo->commit();
 
-        jsonResponse(true, 'Course enrollment successful.', []);
+        jsonResponse(true, 'Course enrollment successful.', [
+            'course_id' => $courseId,
+            'already_enrolled' => $alreadyEnrolledActive,
+            'charged_kodebits' => (!$existing && (string) $course['course_type'] === 'premium') ? (int) $course['kodebits_cost'] : 0,
+        ]);
     }
 
     if ($action === 'access_course_module') {
@@ -1682,6 +1848,7 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
         }
 
         $module = $pdo->prepare('SELECT lm.id, lm.title, lm.body_content, lm.status, cm.sequence_no
+            , COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "module" AND cr.content_id = lm.id AND cr.reaction_value = "like"), 0) AS likes_count
             FROM learning_modules lm
             JOIN course_modules cm ON cm.module_id = lm.id
             WHERE cm.course_id = :course_id AND cm.module_id = :module_id
@@ -1724,6 +1891,7 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
         }
 
         $stmt = $pdo->prepare('SELECT lm.id, lm.title, lm.body_content, lm.difficulty_level, lm.status, lm.kodebits_cost, cm.sequence_no
+            , COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "module" AND cr.content_id = lm.id AND cr.reaction_value = "like"), 0) AS likes_count
             FROM course_modules cm
             JOIN learning_modules lm ON lm.id = cm.module_id
             WHERE cm.course_id = :course_id AND lm.status IN (\'Published\',\'Active\')
@@ -1741,7 +1909,11 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
         }
 
         $moduleId = (int) $input['module_id'];
-        $moduleStmt = $pdo->prepare('SELECT id, title, body_content, status, module_type, kodebits_cost FROM learning_modules WHERE id = :id LIMIT 1');
+        $moduleStmt = $pdo->prepare('SELECT lm.id, lm.title, lm.body_content, lm.status, lm.module_type, lm.kodebits_cost,
+            COALESCE((SELECT COUNT(*) FROM content_reactions cr WHERE cr.content_type = "module" AND cr.content_id = lm.id AND cr.reaction_value = "like"), 0) AS likes_count
+            FROM learning_modules lm
+            WHERE lm.id = :id
+            LIMIT 1');
         $moduleStmt->execute(['id' => $moduleId]);
         $module = $moduleStmt->fetch();
 
@@ -1759,7 +1931,8 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
 
         $pdo->beginTransaction();
 
-        if ((int) $module['kodebits_cost'] > 0) {
+        $hasAccessCharge = hasDebitLedgerEntry($pdo, $auth['id'], 'standalone_module_access', (string) $moduleId);
+        if ((int) $module['kodebits_cost'] > 0 && !$hasAccessCharge) {
             spendKodebits($pdo, $auth['id'], (int) $module['kodebits_cost'], 'standalone_module_access', (string) $moduleId);
         }
 
@@ -1814,13 +1987,32 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
 
     if ($action === 'my_learning') {
         requireRoles($auth, learnerPlus());
-        $stmt = $pdo->prepare('SELECT e.course_id, c.title AS course_title, e.enrollment_status, e.enrolled_at,
-            COALESCE(ROUND(AVG(mp.completion_percent), 0), 0) AS progress_percent
+        $stmt = $pdo->prepare('SELECT e.course_id, c.title AS course_title, c.description AS course_description, c.course_type, c.kodebits_cost,
+            e.enrollment_status, e.enrolled_at,
+            COALESCE(ROUND(AVG(mp.completion_percent), 0), 0) AS progress_percent,
+            COALESCE((
+                SELECT COUNT(*)
+                FROM course_modules cm
+                JOIN learning_modules lm ON lm.id = cm.module_id
+                WHERE cm.course_id = e.course_id AND lm.status IN (\'Published\',\'Active\')
+            ), 0) AS module_count,
+            (
+                SELECT MIN(cm.module_id)
+                FROM course_modules cm
+                JOIN learning_modules lm ON lm.id = cm.module_id
+                WHERE cm.course_id = e.course_id AND lm.status IN (\'Published\',\'Active\')
+            ) AS first_module_id,
+            COALESCE((
+                SELECT COUNT(*)
+                FROM submissions s
+                JOIN code_challenges cc ON cc.id = s.challenge_id
+                WHERE s.user_id = e.user_id
+            ), 0) AS challenge_submission_count
             FROM enrollments e
             JOIN courses c ON c.id = e.course_id
             LEFT JOIN module_progress mp ON mp.user_id = e.user_id AND mp.course_id = e.course_id
             WHERE e.user_id = :user_id
-            GROUP BY e.course_id, c.title, e.enrollment_status, e.enrolled_at
+            GROUP BY e.course_id, c.title, c.description, c.course_type, c.kodebits_cost, e.enrollment_status, e.enrolled_at
             ORDER BY e.id DESC');
         $stmt->execute(['user_id' => $auth['id']]);
         jsonResponse(true, 'Learning progress loaded.', ['rows' => $stmt->fetchAll()]);
@@ -2630,6 +2822,24 @@ function ensureWallet(PDO $pdo, int $userId): void
         'user_id' => $userId,
         'updated_at' => nowUtc(),
     ]);
+}
+
+function hasDebitLedgerEntry(PDO $pdo, int $userId, string $referenceType, string $referenceId): bool
+{
+    $stmt = $pdo->prepare('SELECT id FROM token_ledger
+        WHERE user_id = :user_id
+          AND transaction_type = :transaction_type
+          AND reference_type = :reference_type
+          AND reference_id = :reference_id
+        LIMIT 1');
+    $stmt->execute([
+        'user_id' => $userId,
+        'transaction_type' => 'debit',
+        'reference_type' => $referenceType,
+        'reference_id' => $referenceId,
+    ]);
+
+    return (bool) $stmt->fetch();
 }
 
 function spendKodebits(PDO $pdo, int $userId, int $amount, string $referenceType, string $referenceId): void

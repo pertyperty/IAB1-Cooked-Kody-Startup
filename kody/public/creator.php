@@ -21,6 +21,9 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
 
                 <h3>Challenges</h3>
                 <div id="creator-challenges-table" class="table-wrap"></div>
+
+                <h3>Creator Content Viewer</h3>
+                <div id="creator-content-viewer" class="detail-card">Select a module or challenge row action to view details here.</div>
             </article>
 
             <article class="surface inset-surface">
@@ -67,6 +70,12 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                         <option value="course">course</option>
                         <option value="standalone">standalone</option>
                     </select>
+                    <select name="difficulty_level">
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                    <input name="kodebits_cost" type="number" min="0" value="0" placeholder="KodeBits cost">
                     <button type="submit">Create Module</button>
                 </form>
 
@@ -75,6 +84,19 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <input name="module_id" type="number" min="1" placeholder="Module ID" required>
                     <input name="title" placeholder="New title">
                     <textarea name="body_content" placeholder="New body content"></textarea>
+                    <select name="module_type">
+                        <option value="">No module type change</option>
+                        <option value="course">course</option>
+                        <option value="standalone">standalone</option>
+                    </select>
+                    <select name="difficulty_level">
+                        <option value="">No difficulty change</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                    <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
+                    <input name="status" placeholder="Optional status">
                     <button type="submit">Edit Module</button>
                 </form>
 
@@ -106,7 +128,14 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <h3>UC C01 Create Code Challenge</h3>
                     <input name="title" placeholder="Challenge title" required>
                     <textarea name="prompt_text" placeholder="Prompt" required></textarea>
+                    <select name="difficulty_level">
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
                     <input name="language_scope" placeholder="Language scope" value="Python,Java,C++,JavaScript,PHP">
+                    <input name="time_limit_ms" type="number" min="200" value="2000" placeholder="Time limit (ms)">
+                    <input name="memory_limit_kb" type="number" min="1024" value="128000" placeholder="Memory limit (KB)">
                     <input name="kodebits_cost" type="number" min="0" value="0" placeholder="KodeBits cost">
                     <button type="submit">Create Challenge</button>
                 </form>
@@ -116,6 +145,17 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
                     <input name="title" placeholder="New title">
                     <textarea name="prompt_text" placeholder="New prompt"></textarea>
+                    <select name="difficulty_level">
+                        <option value="">No difficulty change</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                    <input name="language_scope" placeholder="New language scope">
+                    <input name="time_limit_ms" type="number" min="200" placeholder="New time limit (ms)">
+                    <input name="memory_limit_kb" type="number" min="1024" placeholder="New memory limit (KB)">
+                    <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
+                    <input name="status" placeholder="Optional status">
                     <button type="submit">Edit Challenge</button>
                 </form>
             </article>

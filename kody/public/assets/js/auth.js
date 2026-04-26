@@ -342,7 +342,7 @@ function setupRecovery() {
 
 function redirectIfAuthenticated() {
     const page = document.body.getAttribute('data-page');
-    if (!['login', 'register', 'recover', 'verify'].includes(page)) {
+    if (!['index', 'login', 'register', 'recover', 'verify'].includes(page)) {
         return;
     }
 

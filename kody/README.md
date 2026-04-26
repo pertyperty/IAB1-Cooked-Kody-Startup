@@ -11,6 +11,9 @@ The current build provides:
 - learner-or-instructor registration flow with extra instructor verification fields on signup
 - sticky top navigation across the website
 - actual page-first interactions for learning modules and KodeBits package selection, with direct testing tools placed below the main page experience
+- direct row-level operations from creator and governance tables so common tasks no longer require manual ID typing
+- homepage workflow shortcuts that route users to the right operational page per role
+- stricter server-side input validation for email and password updates in key auth flows
 - simulated external-service interfaces for OAuth, email delivery, payment, cloud storage, and code execution without integrating those real providers yet
 
 ## Stack
@@ -23,11 +26,12 @@ The current build provides:
 
 ### Public pages
 
-- `public/index.php` - auth-first gateway (login + registration start page)
+- `public/index.php` - website entry page with auth-start actions
 - `public/login.php` - login
 - `public/register.php` - registration
 - `public/verify.php` - email verification
 - `public/recover.php` - account recovery
+- `public/app.php` - legacy entry page with links to current flows
 
 ### Authenticated pages
 
@@ -38,7 +42,6 @@ The current build provides:
 - `public/rewards.php` - gamification and weekly challenge flows
 - `public/finance.php` - token purchase, spending, earnings, payouts
 - `public/governance.php` - moderation and administration
-- `public/app.php` - legacy redirect to `home.php`
 
 ### Shared frontend helpers
 
@@ -121,6 +124,6 @@ Open:
 
 ## Recommended Next Steps
 
-1. Add direct row-level actions so creator and governance tasks rely less on manual IDs.
-2. Add server-side hardening: CSRF, stronger validation, safer password handling, and stricter session control.
+1. Add CSRF protection across write operations.
+2. Tighten session control strategy and add optional server-side page guards for authenticated pages.
 3. Add scenario-based testing for the role matrix and the 61 use cases.

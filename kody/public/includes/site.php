@@ -76,10 +76,16 @@ function renderWorkspaceNav(string $active, string $title, string $subtitle): vo
     }
 
     echo '</nav>';
+    echo '<div class="topbar-right">';
+    echo '<div class="wallet-chip" id="nav-wallet-chip" aria-live="polite">';
+    echo '<span class="wallet-label">Wallet</span>';
+    echo '<strong id="nav-wallet-balance">0 KB</strong>';
+    echo '</div>';
     echo '<div class="inline-actions compact-actions">';
     echo '<button type="button" class="secondary" id="btn-refresh">Refresh</button>';
     echo '<button type="button" class="secondary" id="btn-me">My Account</button>';
     echo '<button type="button" class="danger" id="btn-logout">Logout</button>';
+    echo '</div>';
     echo '</div>';
     echo '</div>';
 

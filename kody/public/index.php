@@ -2,14 +2,14 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/site.php';
 
-renderHead('Kody Authentication Gateway', 'auth-page', ['data-page' => 'login']);
-renderPublicNav('login');
+renderHead('Kody Authentication Gateway', 'auth-page', ['data-page' => 'index']);
+renderPublicNav('home');
 ?>
 <header class="shell auth-hero">
     <div>
         <p class="eyebrow">Authentication First</p>
-        <h1>Start Kody from login or registration</h1>
-        <p class="hero-copy">This page is the direct entry point. Sign in with a seed account or register a new learner or instructor account.</p>
+        <h1>Welcome to Kody</h1>
+        <p class="hero-copy">This is the website entry page. Start from here, then continue to login, registration, verification, recovery, or the workspace homepage.</p>
     </div>
 
     <div class="hero-note lockout-card">
@@ -38,7 +38,7 @@ renderPublicNav('login');
     </section>
 
     <section class="surface auth-surface">
-        <div id="auth-status" class="status-banner info">Use login to continue, or register a new account.</div>
+        <div id="auth-status" class="status-banner info">Use this page as your starting point, then continue with login or registration.</div>
 
         <div class="catalog-grid">
             <form id="login-form" class="stack-form catalog-card">
@@ -70,6 +70,8 @@ renderPublicNav('login');
         </div>
 
         <div class="inline-actions">
+            <a class="button-link secondary-link" href="login.php">Go to Login</a>
+            <a class="button-link secondary-link" href="register.php">Go to Register</a>
             <a class="button-link secondary-link" href="verify.php">Verify Email</a>
             <a class="button-link secondary-link" href="recover.php">Recover Account</a>
             <a class="button-link secondary-link" href="home.php">Go to Homepage</a>

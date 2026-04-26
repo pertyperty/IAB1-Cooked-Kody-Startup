@@ -13,11 +13,16 @@ renderWorkspaceIntro('G. Administration and Governance', 'Governance Center', 'M
                 <h3>User Accounts</h3>
                 <div id="users-table" class="table-wrap"></div>
 
+                <h3>Challenge Review Queue</h3>
+                <div id="challenge-review-table" class="table-wrap"></div>
+
                 <h3>Contributor Requests</h3>
                 <div id="requests-review-table" class="table-wrap"></div>
+                <div id="contributor-request-cards" class="catalog-list"></div>
 
                 <h3>Instructor Credentials Queue</h3>
                 <div id="credentials-review-table" class="table-wrap"></div>
+                <div id="credential-review-cards" class="catalog-list"></div>
             </article>
 
             <article class="surface inset-surface">
@@ -29,11 +34,15 @@ renderWorkspaceIntro('G. Administration and Governance', 'Governance Center', 'M
             </article>
 
             <article class="surface inset-surface">
-                <form class="stack-form api-form" data-module="challenge" data-action="approve">
-                    <h3>UC C05 Approve Code Challenge</h3>
+                <form class="stack-form api-form" data-module="challenge" data-action="review">
+                    <h3>UC C05 Review Code Challenge</h3>
                     <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
+                    <select name="review_status">
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
                     <textarea name="review_notes" placeholder="Review notes"></textarea>
-                    <button type="submit">Approve Challenge</button>
+                    <button type="submit">Apply Challenge Decision</button>
                 </form>
 
                 <form class="stack-form api-form" data-module="admin" data-action="moderate_content">

@@ -8,6 +8,16 @@ renderWorkspaceIntro('E. User Interaction and Engagement', 'Learning Experience'
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
+        <article class="surface inset-surface">
+            <div class="surface-header compact-header">
+                <h3>Search Learning Content</h3>
+                <button type="button" class="secondary" id="btn-clear-learning-search">Clear</button>
+            </div>
+            <div class="search-bar-wrap">
+                <input id="learning-search" type="search" placeholder="Search courses, modules, and challenges...">
+            </div>
+        </article>
+
         <div class="catalog-grid">
             <article class="surface inset-surface">
                 <div class="surface-header compact-header">

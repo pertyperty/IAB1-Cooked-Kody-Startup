@@ -40,6 +40,12 @@ renderWorkspaceIntro('Homepage', 'Welcome Back', 'This is the main logged-in web
                 </div>
             </article>
         </div>
+
+        <article class="surface inset-surface">
+            <h3>Operational Shortcuts</h3>
+            <p class="section-copy">Open the page for each workflow directly from the homepage.</p>
+            <div id="home-shortcuts" class="home-shortcut-grid"></div>
+        </article>
     </section>
 </main>
 <?php

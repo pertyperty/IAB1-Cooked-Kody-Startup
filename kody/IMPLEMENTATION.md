@@ -12,7 +12,7 @@ This file tracks the current state of the Kody website and must be updated every
 
 ## Current Iteration Goal
 
-Convert Kody from a mostly single-page prototype into a realistic multi-page working website demo while keeping external services simulated.
+Complete the unfinished functional entries after multi-page conversion by adding direct row-level operations, richer page-to-page workflow navigation, and stricter backend validation.
 
 ## Completed In This Iteration
 
@@ -31,7 +31,7 @@ Convert Kody from a mostly single-page prototype into a realistic multi-page wor
   - `finance.php`
   - `governance.php`
 - Added shared PHP layout helpers in `public/includes/site.php`.
-- Kept `public/app.php` as a legacy redirect to `home.php`.
+- Converted `public/app.php` into a proper legacy entry webpage with direct links to current flows.
 - Reworked frontend scripts so the new page structure still uses the working backend flows.
 - Preserved working lockout logic:
   - 3 failed attempts = 15 minutes
@@ -61,6 +61,17 @@ Convert Kody from a mostly single-page prototype into a realistic multi-page wor
   - clickable course-module opening flow
   - clickable standalone module opening flow
   - clickable KodeBits package selection flow
+- Added direct row-level operational actions for creator and governance tables:
+  - course/module/challenge edit, archive, and delete shortcuts
+  - contributor request approve/reject shortcuts
+  - instructor credential accept/reject shortcuts
+  - user suspend/reinstate/update-prefill shortcuts
+  - report moderation shortcuts
+- Added homepage operational shortcut cards that route users to the right page per workflow and role.
+- Added stricter backend auth-input validation:
+  - email format validation on registration, recovery request, and account email change
+  - password strength checks for registration, recovery reset, and account password change
+  - minimum full-name length on registration
 - Moved direct/manual testing controls below the main page experience on key pages.
 
 ## Phase Plan
@@ -82,13 +93,11 @@ Convert Kody from a mostly single-page prototype into a realistic multi-page wor
 - shared layout/navigation structure added
 - dedicated pages now exist for homepage, profile, learning, creator work, rewards, finance, and governance
 
-## Phase 4. UX Depth and Record-Level Actions (In Progress)
+## Phase 4. UX Depth and Record-Level Actions (Completed)
 
-Current focus:
-
-- reduce manual ID entry for creator/moderator/admin tasks
-- add richer row-level actions from course/module/challenge/report/user tables
-- make content browsing and editing feel closer to a finished product
+- Reduced manual ID entry for creator/moderator/admin tasks with direct row actions.
+- Added richer row-level actions from course/module/challenge/report/user tables.
+- Added homepage workflow shortcuts for faster page-to-page navigation.
 
 ## Phase 5. Security and Reliability Hardening (In Progress)
 
@@ -189,6 +198,6 @@ Current focus:
 
 ## Immediate Next Slice
 
-1. Add direct row actions for records so fewer workflows depend on typing IDs manually.
-2. Add richer page-to-page linking between homepage cards and operational pages.
-3. Harden password handling, validation, and session security.
+1. Add CSRF protection across public and authenticated write operations.
+2. Tighten session-control posture (rotation cadence, client storage strategy, and optional server-side page guards).
+3. Add scenario-based verification scripts for role matrix and high-risk use cases.
