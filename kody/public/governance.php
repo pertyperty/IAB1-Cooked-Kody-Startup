@@ -12,9 +12,11 @@ renderWorkspaceIntro('G. Administration and Governance', 'Governance Center', 'M
             <article class="surface inset-surface">
                 <h3>User Accounts</h3>
                 <div id="users-table" class="table-wrap"></div>
+                <div id="user-governance-cards" class="catalog-list"></div>
 
                 <h3>Challenge Review Queue</h3>
                 <div id="challenge-review-table" class="table-wrap"></div>
+                <div id="challenge-review-cards" class="catalog-list"></div>
 
                 <h3>Contributor Requests</h3>
                 <div id="requests-review-table" class="table-wrap"></div>
@@ -28,6 +30,7 @@ renderWorkspaceIntro('G. Administration and Governance', 'Governance Center', 'M
             <article class="surface inset-surface">
                 <h3>Content Reports</h3>
                 <div id="reports-table" class="table-wrap"></div>
+                <div id="report-governance-cards" class="catalog-list"></div>
 
                 <h3>System Reports</h3>
                 <div id="system-reports-table" class="table-wrap"></div>

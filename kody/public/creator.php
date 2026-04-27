@@ -39,26 +39,29 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <button type="submit">Create Course</button>
                 </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="edit_course">
-                    <h3>UC B02 Edit Course</h3>
-                    <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                    <input name="title" placeholder="New title">
-                    <textarea name="description" placeholder="New description"></textarea>
-                    <input name="status" placeholder="Optional status">
-                    <button type="submit">Edit Course</button>
-                </form>
+                <details class="advanced-drawer">
+                    <summary>Advanced Course Maintenance</summary>
+                    <form class="stack-form api-form" data-module="content" data-action="edit_course">
+                        <h3>UC B02 Edit Course</h3>
+                        <input name="course_id" type="number" min="1" placeholder="Course ID" required>
+                        <input name="title" placeholder="New title">
+                        <textarea name="description" placeholder="New description"></textarea>
+                        <input name="status" placeholder="Optional status">
+                        <button type="submit">Edit Course</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="archive_course" data-critical-msg="Archive this course? It will be hidden from new enrollees.">
-                    <h3>UC B03 Archive Course</h3>
-                    <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                    <button type="submit" class="danger">Archive Course</button>
-                </form>
+                    <form class="stack-form api-form" data-module="content" data-action="archive_course" data-critical-msg="Archive this course? It will be hidden from new enrollees.">
+                        <h3>UC B03 Archive Course</h3>
+                        <input name="course_id" type="number" min="1" placeholder="Course ID" required>
+                        <button type="submit" class="danger">Archive Course</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="delete_course" data-critical-msg="Delete this course? Active enrollments block deletion.">
-                    <h3>UC B04 Delete Course</h3>
-                    <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                    <button type="submit" class="danger">Delete Course</button>
-                </form>
+                    <form class="stack-form api-form" data-module="content" data-action="delete_course" data-critical-msg="Delete this course? Active enrollments block deletion.">
+                        <h3>UC B04 Delete Course</h3>
+                        <input name="course_id" type="number" min="1" placeholder="Course ID" required>
+                        <button type="submit" class="danger">Delete Course</button>
+                    </form>
+                </details>
             </article>
 
             <article class="surface inset-surface">
@@ -79,46 +82,49 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <button type="submit">Create Module</button>
                 </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="edit_module">
-                    <h3>UC B06 Edit Module</h3>
-                    <input name="module_id" type="number" min="1" placeholder="Module ID" required>
-                    <input name="title" placeholder="New title">
-                    <textarea name="body_content" placeholder="New body content"></textarea>
-                    <select name="module_type">
-                        <option value="">No module type change</option>
-                        <option value="course">course</option>
-                        <option value="standalone">standalone</option>
-                    </select>
-                    <select name="difficulty_level">
-                        <option value="">No difficulty change</option>
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
-                    </select>
-                    <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
-                    <input name="status" placeholder="Optional status">
-                    <button type="submit">Edit Module</button>
-                </form>
+                <details class="advanced-drawer">
+                    <summary>Advanced Module Maintenance</summary>
+                    <form class="stack-form api-form" data-module="content" data-action="edit_module">
+                        <h3>UC B06 Edit Module</h3>
+                        <input name="module_id" type="number" min="1" placeholder="Module ID" required>
+                        <input name="title" placeholder="New title">
+                        <textarea name="body_content" placeholder="New body content"></textarea>
+                        <select name="module_type">
+                            <option value="">No module type change</option>
+                            <option value="course">course</option>
+                            <option value="standalone">standalone</option>
+                        </select>
+                        <select name="difficulty_level">
+                            <option value="">No difficulty change</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                        <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
+                        <input name="status" placeholder="Optional status">
+                        <button type="submit">Edit Module</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="archive_module" data-critical-msg="Archive this module?">
-                    <h3>UC B07 Archive Module</h3>
-                    <input name="module_id" type="number" min="1" placeholder="Module ID" required>
-                    <button type="submit" class="danger">Archive Module</button>
-                </form>
+                    <form class="stack-form api-form" data-module="content" data-action="archive_module" data-critical-msg="Archive this module?">
+                        <h3>UC B07 Archive Module</h3>
+                        <input name="module_id" type="number" min="1" placeholder="Module ID" required>
+                        <button type="submit" class="danger">Archive Module</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="delete_module" data-critical-msg="Delete this module?">
-                    <h3>UC B08 Delete Module</h3>
-                    <input name="module_id" type="number" min="1" placeholder="Module ID" required>
-                    <button type="submit" class="danger">Delete Module</button>
-                </form>
+                    <form class="stack-form api-form" data-module="content" data-action="delete_module" data-critical-msg="Delete this module?">
+                        <h3>UC B08 Delete Module</h3>
+                        <input name="module_id" type="number" min="1" placeholder="Module ID" required>
+                        <button type="submit" class="danger">Delete Module</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="content" data-action="assign_module">
-                    <h3>UC B09 Assign Module to Course</h3>
-                    <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                    <input name="module_id" type="number" min="1" placeholder="Module ID" required>
-                    <input name="sequence_no" type="number" min="1" placeholder="Sequence" required>
-                    <button type="submit">Assign Module</button>
-                </form>
+                    <form class="stack-form api-form" data-module="content" data-action="assign_module">
+                        <h3>UC B09 Assign Module to Course</h3>
+                        <input name="course_id" type="number" min="1" placeholder="Course ID" required>
+                        <input name="module_id" type="number" min="1" placeholder="Module ID" required>
+                        <input name="sequence_no" type="number" min="1" placeholder="Sequence" required>
+                        <button type="submit">Assign Module</button>
+                    </form>
+                </details>
             </article>
         </div>
 
@@ -140,58 +146,64 @@ renderWorkspaceIntro('B + C. Content and Challenge Management', 'Authoring and S
                     <button type="submit">Create Challenge</button>
                 </form>
 
-                <form class="stack-form api-form" data-module="challenge" data-action="edit">
-                    <h3>UC C02 Edit Code Challenge</h3>
-                    <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
-                    <input name="title" placeholder="New title">
-                    <textarea name="prompt_text" placeholder="New prompt"></textarea>
-                    <select name="difficulty_level">
-                        <option value="">No difficulty change</option>
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
-                    </select>
-                    <input name="language_scope" placeholder="New language scope">
-                    <input name="time_limit_ms" type="number" min="200" placeholder="New time limit (ms)">
-                    <input name="memory_limit_kb" type="number" min="1024" placeholder="New memory limit (KB)">
-                    <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
-                    <input name="status" placeholder="Optional status">
-                    <button type="submit">Edit Challenge</button>
-                </form>
+                <details class="advanced-drawer">
+                    <summary>Advanced Challenge Maintenance</summary>
+                    <form class="stack-form api-form" data-module="challenge" data-action="edit">
+                        <h3>UC C02 Edit Code Challenge</h3>
+                        <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
+                        <input name="title" placeholder="New title">
+                        <textarea name="prompt_text" placeholder="New prompt"></textarea>
+                        <select name="difficulty_level">
+                            <option value="">No difficulty change</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                        <input name="language_scope" placeholder="New language scope">
+                        <input name="time_limit_ms" type="number" min="200" placeholder="New time limit (ms)">
+                        <input name="memory_limit_kb" type="number" min="1024" placeholder="New memory limit (KB)">
+                        <input name="kodebits_cost" type="number" min="0" placeholder="New KodeBits cost">
+                        <input name="status" placeholder="Optional status">
+                        <button type="submit">Edit Challenge</button>
+                    </form>
+                </details>
             </article>
 
             <article class="surface inset-surface">
-                <form class="stack-form api-form" data-module="challenge" data-action="archive" data-critical-msg="Archive this challenge?">
-                    <h3>UC C03 Archive Code Challenge</h3>
-                    <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
-                    <button type="submit" class="danger">Archive Challenge</button>
-                </form>
+                <details class="advanced-drawer">
+                    <summary>Advanced Submission and Review Tools</summary>
+                    <form class="stack-form api-form" data-module="challenge" data-action="archive" data-critical-msg="Archive this challenge?">
+                        <h3>UC C03 Archive Code Challenge</h3>
+                        <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
+                        <button type="submit" class="danger">Archive Challenge</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="challenge" data-action="delete" data-critical-msg="Delete this challenge? Existing submissions block deletion.">
-                    <h3>UC C04 Delete Code Challenge</h3>
-                    <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
-                    <button type="submit" class="danger">Delete Challenge</button>
-                </form>
+                    <form class="stack-form api-form" data-module="challenge" data-action="delete" data-critical-msg="Delete this challenge? Existing submissions block deletion.">
+                        <h3>UC C04 Delete Code Challenge</h3>
+                        <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
+                        <button type="submit" class="danger">Delete Challenge</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="challenge" data-action="submit">
-                    <h3>UC C06 Submit Code Solution</h3>
-                    <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
-                    <select name="language_name">
-                        <option>Python</option>
-                        <option>Java</option>
-                        <option>C++</option>
-                        <option>JavaScript</option>
-                        <option>PHP</option>
-                    </select>
-                    <textarea name="source_code" placeholder="Source code" required></textarea>
-                    <button type="submit">Submit Solution</button>
-                </form>
+                    <form class="stack-form api-form" data-module="challenge" data-action="submit">
+                        <h3>UC C06 Submit Code Solution</h3>
+                        <input name="challenge_id" type="number" min="1" placeholder="Challenge ID" required>
+                        <select name="language_name">
+                            <option>Python</option>
+                            <option>Java</option>
+                            <option>C++</option>
+                            <option>JavaScript</option>
+                            <option>PHP</option>
+                        </select>
+                        <textarea name="source_code" placeholder="Source code" required></textarea>
+                        <button type="submit">Submit Solution</button>
+                    </form>
 
-                <form class="stack-form api-form" data-module="challenge" data-action="evaluate">
-                    <h3>UC C07 Evaluate Existing Submission</h3>
-                    <input name="submission_id" type="number" min="1" placeholder="Submission ID" required>
-                    <button type="submit">Evaluate Submission</button>
-                </form>
+                    <form class="stack-form api-form" data-module="challenge" data-action="evaluate">
+                        <h3>UC C07 Evaluate Existing Submission</h3>
+                        <input name="submission_id" type="number" min="1" placeholder="Submission ID" required>
+                        <button type="submit">Evaluate Submission</button>
+                    </form>
+                </details>
             </article>
 
             <article class="surface inset-surface">

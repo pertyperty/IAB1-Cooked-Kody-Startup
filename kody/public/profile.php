@@ -15,9 +15,11 @@ renderWorkspaceIntro('A. Account and Authentication', 'Account Center', 'The acc
 
                 <h3>Request History</h3>
                 <div id="request-table" class="table-wrap"></div>
+                <div id="request-history-cards" class="catalog-list"></div>
 
                 <h3>Instructor Credentials</h3>
                 <div id="credential-table" class="table-wrap"></div>
+                <div id="credential-history-cards" class="catalog-list"></div>
             </article>
 
             <article class="surface inset-surface">

@@ -1455,20 +1455,19 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
             jsonResponse(false, 'Challenge is not open for submission.', [], 409);
         }
 
-        $attemptStmt = $pdo->prepare('SELECT COUNT(*) FROM submissions WHERE user_id = :user_id AND challenge_id = :challenge_id AND context_type = :context_type');
-        $attemptStmt->execute([
-            'user_id' => $auth['id'],
-            'challenge_id' => $challengeId,
-            'context_type' => 'STANDARD',
-        ]);
+        $attemptState = buildChallengeAttemptState($pdo, $auth['id'], $challengeId);
+        if ((bool) $attemptState['is_evaluated']) {
+            jsonResponse(false, 'This challenge is already evaluated for your account. New submissions are locked.', $attemptState, 409);
+        }
 
-        if ((int) $attemptStmt->fetchColumn() >= 3) {
+        if ((int) $attemptState['attempts_used'] >= 3) {
             jsonResponse(false, 'Submission limit reached (3 attempts).', [], 409);
         }
 
         $pdo->beginTransaction();
 
-        if ((int) $challenge['kodebits_cost'] > 0) {
+        $hasChallengeAccessCharge = hasDebitLedgerEntry($pdo, $auth['id'], 'challenge_access', (string) $challengeId);
+        if ((int) $challenge['kodebits_cost'] > 0 && !$hasChallengeAccessCharge) {
             spendKodebits($pdo, $auth['id'], (int) $challenge['kodebits_cost'], 'challenge_access', (string) $challengeId);
         }
 
@@ -1484,14 +1483,31 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
         ]);
 
         $submissionId = (int) $pdo->lastInsertId();
-        $result = evaluateSubmission($pdo, $submissionId, $sourceCode);
+        $attemptNumber = (int) $attemptState['attempts_used'] + 1;
+        $autoEvaluated = $attemptNumber >= 3;
+        $result = null;
 
-        writeAudit($pdo, $auth['id'], 'submit_challenge_solution', 'submissions', (string) $submissionId, null, ['challenge_id' => $challengeId]);
+        if ($autoEvaluated) {
+            $result = evaluateSubmission($pdo, $submissionId, $sourceCode);
+        }
+
+        writeAudit($pdo, $auth['id'], 'submit_challenge_solution', 'submissions', (string) $submissionId, null, [
+            'challenge_id' => $challengeId,
+            'attempt_number' => $attemptNumber,
+            'auto_evaluated' => $autoEvaluated,
+        ]);
         $pdo->commit();
 
-        jsonResponse(true, 'Submission accepted and evaluated.', [
+        $updatedState = buildChallengeAttemptState($pdo, $auth['id'], $challengeId);
+
+        jsonResponse(true, $autoEvaluated ? 'Submission accepted and auto-evaluated (attempt 3).' : 'Submission accepted. Click Evaluate Submission when ready.', [
             'submission_id' => $submissionId,
+            'attempt_number' => $attemptNumber,
+            'attempts_remaining' => max(0, 3 - $attemptNumber),
+            'auto_evaluated' => $autoEvaluated,
+            'evaluated' => $autoEvaluated,
             'evaluation' => $result,
+            'attempt_state' => $updatedState,
         ]);
     }
 
@@ -1504,7 +1520,7 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
 
         $submissionId = (int) $input['submission_id'];
 
-        $ownerStmt = $pdo->prepare('SELECT user_id, source_code FROM submissions WHERE id = :id LIMIT 1');
+        $ownerStmt = $pdo->prepare('SELECT id, user_id, challenge_id, context_type, source_code FROM submissions WHERE id = :id LIMIT 1');
         $ownerStmt->execute(['id' => $submissionId]);
         $submission = $ownerStmt->fetch();
 
@@ -1516,15 +1532,61 @@ function handleChallenge(PDO $pdo, string $action, array $input, array $auth): v
             jsonResponse(false, 'You cannot evaluate another user submission.', [], 403);
         }
 
+        if ((string) $submission['context_type'] !== 'STANDARD') {
+            jsonResponse(false, 'Only standard challenge submissions can be manually evaluated from this flow.', [], 409);
+        }
+
+        $evaluationLockStmt = $pdo->prepare('SELECT s.id
+            FROM submissions s
+            JOIN submission_results sr ON sr.submission_id = s.id
+            WHERE s.user_id = :user_id
+              AND s.challenge_id = :challenge_id
+              AND s.context_type = :context_type
+            ORDER BY s.id DESC
+            LIMIT 1');
+        $evaluationLockStmt->execute([
+            'user_id' => (int) $submission['user_id'],
+            'challenge_id' => (int) $submission['challenge_id'],
+            'context_type' => 'STANDARD',
+        ]);
+        $existingEvaluation = $evaluationLockStmt->fetch();
+
+        if ($existingEvaluation) {
+            if ((int) $existingEvaluation['id'] === $submissionId) {
+                jsonResponse(false, 'This submission is already evaluated.', [], 409);
+            }
+
+            jsonResponse(false, 'Another submission for this challenge is already evaluated. Re-evaluation is locked for this challenge flow.', [], 409);
+        }
+
         $pdo->beginTransaction();
         $result = evaluateSubmission($pdo, $submissionId, (string) $submission['source_code']);
-        writeAudit($pdo, $auth['id'], 'evaluate_submission', 'submissions', (string) $submissionId, null, ['re_evaluated' => true]);
+        writeAudit($pdo, $auth['id'], 'evaluate_submission', 'submissions', (string) $submissionId, null, ['re_evaluated' => false]);
         $pdo->commit();
+
+        $attemptState = buildChallengeAttemptState($pdo, (int) $submission['user_id'], (int) $submission['challenge_id']);
 
         jsonResponse(true, 'Submission evaluated.', [
             'submission_id' => $submissionId,
             'evaluation' => $result,
+            'attempt_state' => $attemptState,
         ]);
+    }
+
+    if ($action === 'attempt_state') {
+        requireRoles($auth, learnerPlus());
+        $missing = requiredFields($input, ['challenge_id']);
+        if ($missing !== null) {
+            jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
+        }
+
+        $challengeId = (int) $input['challenge_id'];
+        if ($challengeId <= 0) {
+            jsonResponse(false, 'Invalid challenge_id.', [], 422);
+        }
+
+        $state = buildChallengeAttemptState($pdo, $auth['id'], $challengeId);
+        jsonResponse(true, 'Challenge attempt state loaded.', ['state' => $state]);
     }
 
     if ($action === 'list_feedback') {
@@ -1562,6 +1624,17 @@ function handleGamification(PDO $pdo, string $action, array $input, array $auth)
         requireRoles($auth, learnerPlus());
         $rows = $pdo->query('SELECT id, preset_name, rules_json, rewards_json, status, created_by, created_at FROM game_presets ORDER BY id DESC')->fetchAll();
         jsonResponse(true, 'Game presets loaded.', ['rows' => $rows]);
+    }
+
+    if ($action === 'list_weekly') {
+        requireRoles($auth, learnerPlus());
+        $rows = $pdo->query('SELECT wc.id, wc.weekly_code, wc.challenge_id, cc.title AS challenge_title, wc.start_at, wc.end_at, wc.status, wc.configured_by, wc.created_at,
+            COALESCE((SELECT COUNT(*) FROM submissions s WHERE s.weekly_challenge_id = wc.id), 0) AS submission_count,
+            COALESCE((SELECT COUNT(*) FROM weekly_results wr WHERE wr.weekly_challenge_id = wc.id), 0) AS result_count
+            FROM weekly_challenges wc
+            JOIN code_challenges cc ON cc.id = wc.challenge_id
+            ORDER BY wc.id DESC')->fetchAll();
+        jsonResponse(true, 'Weekly challenge queue loaded.', ['rows' => $rows]);
     }
 
     if ($action === 'create_activity') {
@@ -1792,19 +1865,6 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
 
         $pdo->beginTransaction();
 
-        $existingStmt = $pdo->prepare('SELECT id, enrollment_status FROM enrollments WHERE user_id = :user_id AND course_id = :course_id LIMIT 1 FOR UPDATE');
-        $existingStmt->execute([
-            'user_id' => $auth['id'],
-            'course_id' => $courseId,
-        ]);
-        $existing = $existingStmt->fetch();
-
-        $alreadyEnrolledActive = $existing && (string) $existing['enrollment_status'] === 'Active';
-
-        if (!$existing && (string) $course['course_type'] === 'premium' && (int) $course['kodebits_cost'] > 0) {
-            spendKodebits($pdo, $auth['id'], (int) $course['kodebits_cost'], 'course_enroll', (string) $courseId);
-        }
-
         $enroll = $pdo->prepare('INSERT INTO enrollments (user_id, course_id, enrollment_status, enrolled_at, updated_at)
             VALUES (:user_id, :course_id, :enrollment_status, :enrolled_at, :updated_at)
             ON DUPLICATE KEY UPDATE enrollment_status = VALUES(enrollment_status), updated_at = VALUES(updated_at)');
@@ -1816,13 +1876,21 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
             'updated_at' => nowUtc(),
         ]);
 
+        // A fresh insert means first-time enrollment and is the only case we charge for premium.
+        $isFirstEnrollment = $enroll->rowCount() === 1;
+        $chargedKodebits = 0;
+        if ($isFirstEnrollment && (string) $course['course_type'] === 'premium' && (int) $course['kodebits_cost'] > 0) {
+            $chargedKodebits = (int) $course['kodebits_cost'];
+            spendKodebits($pdo, $auth['id'], $chargedKodebits, 'course_enroll', (string) $courseId);
+        }
+
         writeAudit($pdo, $auth['id'], 'enroll_course', 'enrollments', $auth['id'] . ':' . $courseId, null, ['course_id' => $courseId]);
         $pdo->commit();
 
         jsonResponse(true, 'Course enrollment successful.', [
             'course_id' => $courseId,
-            'already_enrolled' => $alreadyEnrolledActive,
-            'charged_kodebits' => (!$existing && (string) $course['course_type'] === 'premium') ? (int) $course['kodebits_cost'] : 0,
+            'already_enrolled' => !$isFirstEnrollment,
+            'charged_kodebits' => $chargedKodebits,
         ]);
     }
 
@@ -1997,15 +2065,16 @@ function handleInteraction(PDO $pdo, string $action, array $input, array $auth):
                 WHERE cm.course_id = e.course_id AND lm.status IN (\'Published\',\'Active\')
             ), 0) AS module_count,
             (
-                SELECT MIN(cm.module_id)
+                SELECT cm.module_id
                 FROM course_modules cm
                 JOIN learning_modules lm ON lm.id = cm.module_id
                 WHERE cm.course_id = e.course_id AND lm.status IN (\'Published\',\'Active\')
+                ORDER BY cm.sequence_no ASC
+                LIMIT 1
             ) AS first_module_id,
             COALESCE((
                 SELECT COUNT(*)
                 FROM submissions s
-                JOIN code_challenges cc ON cc.id = s.challenge_id
                 WHERE s.user_id = e.user_id
             ), 0) AS challenge_submission_count
             FROM enrollments e
@@ -2201,6 +2270,45 @@ function handleFinance(PDO $pdo, string $action, array $input, array $auth): voi
         writeAudit($pdo, $auth['id'], 'request_payout', 'payout_requests', (string) $pdo->lastInsertId(), null, ['amount' => $amount]);
 
         jsonResponse(true, 'Payout request submitted.', ['payout_request_id' => (int) $pdo->lastInsertId()]);
+    }
+
+    if ($action === 'list_payout_requests') {
+        requireRoles($auth, [ROLE_CONTRIBUTOR, ROLE_INSTRUCTOR, ROLE_ADMIN]);
+
+        if ($auth['role'] === ROLE_ADMIN) {
+            $rows = $pdo->query('SELECT pr.id, pr.user_id, u.full_name, pr.creator_earning_id, pr.request_amount_php, pr.payout_channel, pr.payout_status, pr.requested_at, pr.processed_at
+                FROM payout_requests pr
+                JOIN users u ON u.id = pr.user_id
+                ORDER BY pr.id DESC')->fetchAll();
+        } else {
+            $stmt = $pdo->prepare('SELECT pr.id, pr.user_id, u.full_name, pr.creator_earning_id, pr.request_amount_php, pr.payout_channel, pr.payout_status, pr.requested_at, pr.processed_at
+                FROM payout_requests pr
+                JOIN users u ON u.id = pr.user_id
+                WHERE pr.user_id = :user_id
+                ORDER BY pr.id DESC');
+            $stmt->execute(['user_id' => $auth['id']]);
+            $rows = $stmt->fetchAll();
+        }
+
+        jsonResponse(true, 'Payout requests loaded.', ['rows' => $rows]);
+    }
+
+    if ($action === 'transaction_history') {
+        requireRoles($auth, learnerPlus());
+
+        $stmt = $pdo->prepare('SELECT tl.id, tl.transaction_type, tl.amount_kb, tl.reference_type, tl.reference_id, tl.notes, tl.created_at,
+            pt.payment_ref, pt.php_amount, pt.payment_status
+            FROM token_ledger tl
+            LEFT JOIN payment_transactions pt ON pt.payment_ref = tl.reference_id AND tl.reference_type = :payment_ref_type
+            WHERE tl.user_id = :user_id
+            ORDER BY tl.id DESC
+            LIMIT 200');
+        $stmt->execute([
+            'payment_ref_type' => 'payment',
+            'user_id' => $auth['id'],
+        ]);
+
+        jsonResponse(true, 'Transaction history loaded.', ['rows' => $stmt->fetchAll()]);
     }
 
     if ($action === 'notifications') {
@@ -2749,6 +2857,94 @@ function registerFailedAttempt(PDO $pdo, string $email, ?int $userId): void
     }
 
     $pdo->commit();
+}
+
+function buildChallengeAttemptState(PDO $pdo, int $userId, int $challengeId): array
+{
+    $attemptsStmt = $pdo->prepare('SELECT COUNT(*) FROM submissions
+        WHERE user_id = :user_id
+          AND challenge_id = :challenge_id
+          AND context_type = :context_type');
+    $attemptsStmt->execute([
+        'user_id' => $userId,
+        'challenge_id' => $challengeId,
+        'context_type' => 'STANDARD',
+    ]);
+    $attemptsUsed = (int) $attemptsStmt->fetchColumn();
+
+    $latestSubmissionStmt = $pdo->prepare('SELECT id, submitted_at
+        FROM submissions
+        WHERE user_id = :user_id
+          AND challenge_id = :challenge_id
+          AND context_type = :context_type
+        ORDER BY id DESC
+        LIMIT 1');
+    $latestSubmissionStmt->execute([
+        'user_id' => $userId,
+        'challenge_id' => $challengeId,
+        'context_type' => 'STANDARD',
+    ]);
+    $latestSubmission = $latestSubmissionStmt->fetch();
+
+    $evaluatedStmt = $pdo->prepare('SELECT s.id, sr.evaluated_at
+        FROM submissions s
+        JOIN submission_results sr ON sr.submission_id = s.id
+        WHERE s.user_id = :user_id
+          AND s.challenge_id = :challenge_id
+          AND s.context_type = :context_type
+        ORDER BY s.id DESC
+        LIMIT 1');
+    $evaluatedStmt->execute([
+        'user_id' => $userId,
+        'challenge_id' => $challengeId,
+        'context_type' => 'STANDARD',
+    ]);
+    $evaluatedRow = $evaluatedStmt->fetch();
+
+    $pendingStmt = $pdo->prepare('SELECT s.id
+        FROM submissions s
+        LEFT JOIN submission_results sr ON sr.submission_id = s.id
+        WHERE s.user_id = :user_id
+          AND s.challenge_id = :challenge_id
+          AND s.context_type = :context_type
+          AND sr.submission_id IS NULL
+        ORDER BY s.id DESC
+        LIMIT 1');
+    $pendingStmt->execute([
+        'user_id' => $userId,
+        'challenge_id' => $challengeId,
+        'context_type' => 'STANDARD',
+    ]);
+    $pendingRow = $pendingStmt->fetch();
+
+    $isEvaluated = $evaluatedRow !== false && $evaluatedRow !== null;
+    $attemptsRemaining = max(0, 3 - $attemptsUsed);
+    $pendingSubmissionId = $isEvaluated ? null : ($pendingRow ? (int) $pendingRow['id'] : null);
+    $canSubmit = !$isEvaluated && $attemptsUsed < 3;
+    $canEvaluate = !$isEvaluated && $pendingSubmissionId !== null;
+
+    $lockReason = null;
+    if ($isEvaluated) {
+        $lockReason = 'Evaluation is already completed for this challenge. New submissions are locked.';
+    } elseif ($attemptsUsed >= 3) {
+        $lockReason = 'Submission limit reached (3 attempts).';
+    }
+
+    return [
+        'challenge_id' => $challengeId,
+        'attempts_used' => $attemptsUsed,
+        'attempts_remaining' => $attemptsRemaining,
+        'max_attempts' => 3,
+        'is_evaluated' => $isEvaluated,
+        'can_submit' => $canSubmit,
+        'can_evaluate' => $canEvaluate,
+        'pending_submission_id' => $pendingSubmissionId,
+        'latest_submission_id' => $latestSubmission ? (int) $latestSubmission['id'] : null,
+        'latest_submitted_at' => $latestSubmission['submitted_at'] ?? null,
+        'evaluated_submission_id' => $evaluatedRow ? (int) $evaluatedRow['id'] : null,
+        'evaluated_at' => $evaluatedRow['evaluated_at'] ?? null,
+        'lock_reason' => $lockReason,
+    ];
 }
 
 function evaluateSubmission(PDO $pdo, int $submissionId, string $sourceCode): array

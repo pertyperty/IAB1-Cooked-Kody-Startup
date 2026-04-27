@@ -484,6 +484,54 @@ h3 {
     gap: 0.8rem;
 }
 
+.search-bar-wrap input {
+    margin-bottom: 0;
+}
+
+.learning-snapshot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.8rem;
+    padding: 0.8rem;
+}
+
+.learning-snapshot-card {
+    border-style: solid;
+}
+
+.governance-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(239, 250, 247, 0.72));
+}
+
+.process-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 245, 236, 0.74));
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(70, 81, 96, 0.12);
+    color: #3a4556;
+    font-size: 0.85rem;
+}
+
+.status-pill.good {
+    background: rgba(41, 139, 77, 0.16);
+    color: #1d6f3f;
+}
+
+.status-pill.warn {
+    background: rgba(201, 111, 61, 0.18);
+    color: #8c4a23;
+}
+
+.status-pill.bad {
+    background: rgba(175, 48, 64, 0.16);
+    color: #8f2938;
+}
+
 .home-shortcut-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -581,6 +629,64 @@ h3 {
     margin-bottom: 0.7rem;
 }
 
+.muted-note {
+    margin: 0.35rem 0 0.7rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.cli-panel {
+    border: 1px solid #1f242d;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #12161c;
+    margin-bottom: 0.65rem;
+}
+
+.cli-header {
+    padding: 0.5rem 0.75rem;
+    background: #1f252f;
+    color: #b9f2de;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #2d3746;
+}
+
+.cli-source {
+    min-height: 260px;
+    margin-bottom: 0;
+    border: none;
+    border-radius: 0;
+    background: #0f1318;
+    color: #d8f7ee;
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.5;
+}
+
+.cli-source:focus {
+    outline: 2px solid rgba(101, 224, 200, 0.45);
+    outline-offset: -2px;
+}
+
+.advanced-drawer {
+    margin-top: 0.55rem;
+    border: 1px dashed rgba(216, 204, 185, 0.95);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.66);
+    padding: 0.6rem;
+}
+
+.advanced-drawer > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent-strong);
+    margin-bottom: 0.45rem;
+}
+
+.advanced-drawer > summary::marker {
+    color: var(--accent-strong);
+}
+
 input,
 textarea,
 select,
@@ -612,6 +718,13 @@ button {
 button:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 24px rgba(10, 123, 118, 0.25);
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }
 
 button.secondary {
@@ -725,6 +838,19 @@ button.danger {
 
 .developer-console {
     margin-top: 0.5rem;
+}
+
+.dev-console-toggle {
+    width: auto;
+    margin: 0.7rem 0 0.5rem;
+}
+
+.developer-console-collapsed .developer-console-body {
+    display: none;
+}
+
+.developer-console-body {
+    display: block;
 }
 
 #response-box,

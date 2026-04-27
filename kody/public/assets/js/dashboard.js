@@ -31,15 +31,31 @@ const ROLE_BLUEPRINTS = {
 const state = {
     auth: null,
     modalResolver: null,
+    learningSearchTimer: null,
+    learning: {
+        search: '',
+        courses: [],
+        modules: [],
+        challenges: [],
+    },
+    challenges: {
+        rows: [],
+        selectedId: null,
+        attemptState: null,
+    },
 };
 
 const PAGE_ACCESS = {
     home: 'learner,contributor,instructor,moderator,administrator',
     profile: 'learner,contributor,instructor,moderator,administrator',
     learn: 'learner,contributor,instructor,moderator,administrator',
+    challenges: 'learner,contributor,instructor,moderator,administrator',
+    leaderboard: 'learner,contributor,instructor,moderator,administrator',
+    faq: 'learner,contributor,instructor,moderator,administrator',
     module: 'learner,contributor,instructor,moderator,administrator',
     creator: 'contributor,instructor,administrator',
     rewards: 'learner,contributor,instructor,moderator,administrator',
+    topup: 'learner,contributor,instructor,moderator,administrator',
     finance: 'learner,contributor,instructor,moderator,administrator',
     governance: 'moderator,administrator',
 };
@@ -114,6 +130,27 @@ function formatLikes(value) {
     return `${formatNumber(value)} like${Number(value || 0) === 1 ? '' : 's'}`;
 }
 
+function toStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized.includes('approve') || normalized.includes('active') || normalized.includes('published') || normalized.includes('success') || normalized.includes('accept')) {
+        return 'status-pill good';
+    }
+
+    if (normalized.includes('reject') || normalized.includes('suspend') || normalized.includes('delete') || normalized.includes('fail')) {
+        return 'status-pill bad';
+    }
+
+    if (normalized.includes('pending') || normalized.includes('review') || normalized.includes('processing') || normalized.includes('draft')) {
+        return 'status-pill warn';
+    }
+
+    return 'status-pill';
+}
+
+function renderStatusPill(status) {
+    return `<span class="${toStatusClass(status)}">${escapeHtml(status || 'n/a')}</span>`;
+}
+
 function updateNavWallet(user) {
     const walletNode = document.getElementById('nav-wallet-balance');
     if (!walletNode || !user) {
@@ -172,6 +209,9 @@ async function loadModulePage() {
             return;
         }
 
+        const challenges = await apiCall('interaction', 'browse_challenges');
+        renderModuleChallengeCatalog(challenges.data.rows || []);
+
         const row = result.data.row;
         heading.textContent = row.title || 'Standalone Module';
         renderModuleDetail(row.title, row.body_content, [row.module_type, row.status, `${row.kodebits_cost} KB`, formatLikes(row.likes_count || 0)]);
@@ -186,6 +226,9 @@ async function loadModulePage() {
         if (!result?.data?.row) {
             return;
         }
+
+        const challenges = await apiCall('interaction', 'browse_challenges');
+        renderModuleChallengeCatalog(challenges.data.rows || []);
 
         const row = result.data.row;
         heading.textContent = row.title || 'Course Module';
@@ -254,6 +297,10 @@ function decodeRowPayload(raw) {
     }
 }
 
+function encodeRowPayload(row) {
+    return encodeURIComponent(JSON.stringify(row || {}));
+}
+
 function prefillApiForm(module, action, values) {
     const form = document.querySelector(`form.api-form[data-module="${module}"][data-action="${action}"]`);
     if (!form || !values) {
@@ -295,12 +342,50 @@ function getRowQuickActions(targetId, row) {
     }
 
     if (targetId === 'creator-challenges-table') {
-        return [
+        const actions = [
             { label: 'View', quick: 'row-challenge-view', style: 'secondary' },
             { label: 'Edit', quick: 'row-challenge-edit', style: 'secondary' },
             { label: 'Archive', quick: 'row-challenge-archive', style: 'danger', confirm: 'Archive this challenge?' },
             { label: 'Delete', quick: 'row-challenge-delete', style: 'danger', confirm: 'Delete this challenge now?' },
             { label: 'Submit', quick: 'row-challenge-submit', style: 'secondary' },
+        ];
+
+        if (roleAllowed('administrator')) {
+            actions.push({ label: 'Weekly', quick: 'row-challenge-configure-weekly', style: 'secondary' });
+        }
+
+        return actions;
+    }
+
+    if (targetId === 'challenge-review-table') {
+        return [
+            { label: 'Approve', quick: 'row-challenge-approve' },
+            { label: 'Reject', quick: 'row-challenge-reject', style: 'danger' },
+        ];
+    }
+
+    if (targetId === 'preset-table') {
+        return [
+            { label: 'Use for Activity', quick: 'row-preset-use', style: 'secondary' },
+        ];
+    }
+
+    if (targetId === 'weekly-table') {
+        return [
+            { label: 'Evaluate', quick: 'row-weekly-evaluate', style: 'secondary' },
+            { label: 'Publish', quick: 'row-weekly-publish' },
+        ];
+    }
+
+    if (targetId === 'gamification-leaderboard-table' && roleAllowed('moderator,administrator')) {
+        return [
+            { label: 'Grant Reward', quick: 'row-leaderboard-grant', style: 'secondary' },
+        ];
+    }
+
+    if (targetId === 'earnings-table') {
+        return [
+            { label: 'Request Payout', quick: 'row-earning-request-payout', style: 'secondary' },
         ];
     }
 
@@ -498,9 +583,13 @@ function renderHomeShortcuts() {
     }
 
     const links = [
-        { href: 'learn.php', title: 'Learning Hub', copy: 'Browse courses, modules, and challenges.' },
+        { href: 'learn.php', title: 'Learning Hub', copy: 'Browse courses and modules.' },
+        { href: 'challenges.php', title: 'Challenge Arena', copy: 'Select a challenge, confirm entry, and submit your code.' },
+        { href: 'leaderboard.php', title: 'Leaderboard', copy: 'Track rankings in a dedicated leaderboard page.' },
+        { href: 'faq.php', title: 'FAQ and Help', copy: 'Read platform FAQs in the help center page.' },
         { href: 'profile.php', title: 'Profile Settings', copy: 'Manage account updates and role requests.' },
-        { href: 'finance.php', title: 'Finance and Wallet', copy: 'Purchase KodeBits and view transactions.' },
+        { href: 'topup.php', title: 'Top Up KodeBits', copy: 'Purchase KodeBits packages and manage wallet usage.' },
+        { href: 'finance.php', title: 'Earnings and Payouts', copy: 'Track creator earnings and submit payout requests.' },
         { href: 'rewards.php', title: 'Rewards and Leaderboard', copy: 'Check rankings and gamification flows.' },
     ];
 
@@ -566,6 +655,461 @@ function renderCourseModules(rows, courseId = null) {
             </div>
         </article>
     `).join('');
+}
+
+function renderLearningSnapshot(rows) {
+    const target = document.getElementById('learning-table');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">You do not have any enrollments yet.</div>';
+        return;
+    }
+
+    target.innerHTML = `<div class="learning-snapshot-grid">${rows.map((row) => {
+        const openFirstDisabled = !row.first_module_id ? 'disabled' : '';
+        return `
+            <article class="catalog-card learning-snapshot-card">
+                <div>
+                    <h3>${escapeHtml(row.course_title)}</h3>
+                    <p>${escapeHtml(row.course_description || 'No description provided yet.')}</p>
+                </div>
+                <div class="pill-row">
+                    <span class="pill">${escapeHtml(row.course_type || 'course')}</span>
+                    ${renderStatusPill(row.enrollment_status || 'status n/a')}
+                    <span class="pill">Progress ${escapeHtml(formatNumber(row.progress_percent || 0))}%</span>
+                    <span class="pill">${escapeHtml(formatNumber(row.module_count || 0))} modules</span>
+                    <span class="pill">${escapeHtml(formatNumber(row.challenge_submission_count || 0))} challenge submissions</span>
+                </div>
+                <div class="inline-actions">
+                    <button type="button" data-quick="view-course-modules" data-course-id="${escapeHtml(row.course_id)}">View Modules</button>
+                    <button type="button" class="secondary" data-quick="access-course-module" data-course-id="${escapeHtml(row.course_id)}" data-module-id="${escapeHtml(row.first_module_id || '')}" ${openFirstDisabled}>Open First Module</button>
+                    <button type="button" class="secondary" data-quick="open-first-challenge">Start Challenge</button>
+                </div>
+            </article>
+        `;
+    }).join('')}</div>`;
+}
+
+function renderContributorRequestCards(rows) {
+    const target = document.getElementById('contributor-request-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No contributor requests pending review.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card governance-card">
+            <div>
+                <h3>${escapeHtml(row.full_name || `User #${row.user_id}`)}</h3>
+                <p>${escapeHtml(row.notes || 'No notes provided.')}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">Request #${escapeHtml(row.id)}</span>
+                <span class="pill">Role: ${escapeHtml(row.requested_role)}</span>
+                ${renderStatusPill(row.status)}
+                <span class="pill">Created: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" data-quick="row-request-approve" data-row="${escapeHtml(encodeRowPayload(row))}">Approve</button>
+                <button type="button" class="danger" data-quick="row-request-reject" data-row="${escapeHtml(encodeRowPayload(row))}">Reject</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderCredentialReviewCards(rows) {
+    const target = document.getElementById('credential-review-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No instructor credentials pending review.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card governance-card">
+            <div>
+                <h3>${escapeHtml(row.full_name || `User #${row.user_id}`)}</h3>
+                <p>${escapeHtml(row.credential_title || 'Credential title unavailable.')}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">Credential #${escapeHtml(row.id)}</span>
+                ${renderStatusPill(row.verification_status)}
+                <span class="pill">Submitted: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <a class="button-link secondary-link" href="${escapeHtml(row.file_url || '#')}" target="_blank" rel="noopener noreferrer">View File</a>
+                <button type="button" data-quick="row-credential-accept" data-row="${escapeHtml(encodeRowPayload(row))}">Accept</button>
+                <button type="button" class="danger" data-quick="row-credential-reject" data-row="${escapeHtml(encodeRowPayload(row))}">Reject</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderChallengeReviewCards(rows) {
+    const target = document.getElementById('challenge-review-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No challenges are waiting for review.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card governance-card">
+            <div>
+                <h3>${escapeHtml(row.title || `Challenge #${row.id}`)}</h3>
+                <p>${escapeHtml(row.prompt_text || 'No prompt text available.')}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">Challenge #${escapeHtml(row.id)}</span>
+                <span class="pill">${escapeHtml(row.difficulty_level || 'difficulty n/a')}</span>
+                <span class="pill">${escapeHtml(row.language_scope || 'language n/a')}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" data-quick="row-challenge-approve" data-row="${escapeHtml(encodeRowPayload(row))}">Approve</button>
+                <button type="button" class="danger" data-quick="row-challenge-reject" data-row="${escapeHtml(encodeRowPayload(row))}">Reject</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderRequestHistoryCards(rows) {
+    const target = document.getElementById('request-history-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No request history yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(row.requested_role || 'role request')}</h3>
+            <p>${escapeHtml(row.notes || 'No request notes provided.')}</p>
+            <div class="pill-row">
+                <span class="pill">Request #${escapeHtml(row.id)}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+                <span class="pill">Created: ${escapeHtml(formatDate(row.created_at))}</span>
+                <span class="pill">Reviewed: ${escapeHtml(formatDate(row.reviewed_at))}</span>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderCredentialHistoryCards(rows) {
+    const target = document.getElementById('credential-history-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No credential history yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(row.credential_title || 'Credential')}</h3>
+            <p><a href="${escapeHtml(row.file_url || '#')}" target="_blank" rel="noopener noreferrer">Open submitted file</a></p>
+            <div class="pill-row">
+                <span class="pill">Credential #${escapeHtml(row.id)}</span>
+                ${renderStatusPill(row.verification_status || 'status n/a')}
+                <span class="pill">Submitted: ${escapeHtml(formatDate(row.created_at))}</span>
+                <span class="pill">Validated: ${escapeHtml(formatDate(row.validated_at))}</span>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderEarningsCards(rows) {
+    const target = document.getElementById('earnings-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No earnings records available.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(row.period_label || 'Earnings Period')}</h3>
+            <p>Creator share: PHP ${escapeHtml(Number(row.creator_share_php || 0).toFixed(2))}</p>
+            <div class="pill-row">
+                <span class="pill">Earning #${escapeHtml(row.id)}</span>
+                <span class="pill">Gross: PHP ${escapeHtml(Number(row.gross_php || 0).toFixed(2))}</span>
+                ${renderStatusPill(row.payout_status || 'status n/a')}
+                <span class="pill">Generated: ${escapeHtml(formatDate(row.generated_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" data-quick="row-earning-request-payout" data-row="${escapeHtml(encodeRowPayload(row))}">Request Payout</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderPayoutRequestCards(rows) {
+    const target = document.getElementById('payout-request-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No payout requests yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>Payout Request #${escapeHtml(row.id)}</h3>
+            <p>PHP ${escapeHtml(Number(row.request_amount_php || 0).toFixed(2))} via ${escapeHtml(row.payout_channel || 'channel n/a')}</p>
+            <div class="pill-row">
+                <span class="pill">Earning #${escapeHtml(row.creator_earning_id)}</span>
+                ${renderStatusPill(row.payout_status || 'status n/a')}
+                <span class="pill">Requested: ${escapeHtml(formatDate(row.requested_at))}</span>
+                <span class="pill">Processed: ${escapeHtml(formatDate(row.processed_at))}</span>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderTopupHistoryCards(rows) {
+    const target = document.getElementById('topup-history-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No transactions recorded yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.slice(0, 40).map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(String(row.transaction_type || 'transaction').toUpperCase())} ${escapeHtml(formatNumber(row.amount_kb || 0))} KB</h3>
+            <p>${escapeHtml(row.notes || 'Wallet transaction')}</p>
+            <div class="pill-row">
+                <span class="pill">Ref: ${escapeHtml(row.reference_type || 'n/a')} / ${escapeHtml(row.reference_id || 'n/a')}</span>
+                ${renderStatusPill(row.payment_status || 'recorded')}
+                <span class="pill">PHP: ${escapeHtml(Number(row.php_amount || 0).toFixed(2))}</span>
+                <span class="pill">At: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderPresetCards(rows) {
+    const target = document.getElementById('preset-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No presets available.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(row.preset_name || `Preset #${row.id}`)}</h3>
+            <p>Prepare an activity by selecting this preset.</p>
+            <div class="pill-row">
+                <span class="pill">Preset #${escapeHtml(row.id)}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+                <span class="pill">Created: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" class="secondary" data-quick="row-preset-use" data-row="${escapeHtml(encodeRowPayload(row))}">Use for Activity</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderWeeklyCards(rows) {
+    const target = document.getElementById('weekly-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No weekly challenges configured yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card process-card">
+            <h3>${escapeHtml(row.weekly_code || `Weekly #${row.id}`)}</h3>
+            <p>${escapeHtml(row.challenge_title || 'Challenge not found')}</p>
+            <div class="pill-row">
+                <span class="pill">Weekly #${escapeHtml(row.id)}</span>
+                <span class="pill">Challenge #${escapeHtml(row.challenge_id)}</span>
+                <span class="pill">Submissions: ${escapeHtml(formatNumber(row.submission_count || 0))}</span>
+                <span class="pill">Results: ${escapeHtml(formatNumber(row.result_count || 0))}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+            </div>
+            <div class="inline-actions">
+                <button type="button" class="secondary" data-quick="row-weekly-evaluate" data-row="${escapeHtml(encodeRowPayload(row))}">Evaluate</button>
+                <button type="button" data-quick="row-weekly-publish" data-row="${escapeHtml(encodeRowPayload(row))}">Publish</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderUserGovernanceCards(rows) {
+    const target = document.getElementById('user-governance-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No user accounts found.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.slice(0, 20).map((row) => `
+        <article class="catalog-card governance-card process-card">
+            <div>
+                <h3>${escapeHtml(row.full_name || `User #${row.id}`)}</h3>
+                <p>${escapeHtml(row.email || 'No email available')}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">User #${escapeHtml(row.id)}</span>
+                <span class="pill">Role: ${escapeHtml(row.primary_role || 'n/a')}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+                <span class="pill">Created: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" class="danger" data-quick="row-user-suspend" data-row="${escapeHtml(encodeRowPayload(row))}">Suspend</button>
+                <button type="button" class="secondary" data-quick="row-user-reinstate" data-row="${escapeHtml(encodeRowPayload(row))}">Reinstate</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderReportGovernanceCards(rows) {
+    const target = document.getElementById('report-governance-cards');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No content reports found.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <article class="catalog-card governance-card process-card">
+            <div>
+                <h3>Report #${escapeHtml(row.id)}</h3>
+                <p>${escapeHtml(row.report_reason || 'No report reason provided.')}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">Target: ${escapeHtml(row.content_type)} #${escapeHtml(row.content_id)}</span>
+                <span class="pill">Reporter: #${escapeHtml(row.reporter_user_id)}</span>
+                ${renderStatusPill(row.report_status || 'status n/a')}
+                <span class="pill">Filed: ${escapeHtml(formatDate(row.created_at))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" class="danger" data-quick="row-report-archive" data-row="${escapeHtml(encodeRowPayload(row))}">Archive Target</button>
+                <button type="button" class="secondary" data-quick="row-report-reject" data-row="${escapeHtml(encodeRowPayload(row))}">Reject Report</button>
+            </div>
+        </article>
+    `).join('');
+}
+
+function setupDeveloperConsoles() {
+    document.querySelectorAll('.developer-console').forEach((consoleNode) => {
+        const heading = consoleNode.querySelector('h2');
+        if (!heading) {
+            return;
+        }
+
+        if (consoleNode.querySelector('.dev-console-toggle')) {
+            return;
+        }
+
+        const body = document.createElement('div');
+        body.className = 'developer-console-body';
+
+        while (heading.nextSibling) {
+            body.appendChild(heading.nextSibling);
+        }
+
+        consoleNode.appendChild(body);
+        consoleNode.classList.add('developer-console-collapsed');
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'secondary dev-console-toggle';
+        toggle.textContent = 'Show Direct API Tools';
+        toggle.addEventListener('click', () => {
+            const expanded = consoleNode.classList.toggle('developer-console-collapsed');
+            toggle.textContent = expanded ? 'Show Direct API Tools' : 'Hide Direct API Tools';
+        });
+
+        heading.insertAdjacentElement('afterend', toggle);
+    });
+}
+
+function matchesLearningSearch(row, fields, query) {
+    if (!query) {
+        return true;
+    }
+
+    return fields.some((key) => String(row?.[key] || '').toLowerCase().includes(query));
+}
+
+function applyLearningSearch() {
+    const query = String(state.learning.search || '').trim().toLowerCase();
+    const filteredCourses = state.learning.courses.filter((row) => matchesLearningSearch(row, ['title', 'description', 'course_type'], query));
+    const filteredModules = state.learning.modules.filter((row) => matchesLearningSearch(row, ['title', 'body_content', 'difficulty_level'], query));
+    const filteredChallenges = state.learning.challenges.filter((row) => matchesLearningSearch(row, ['title', 'language_scope', 'difficulty_level'], query));
+
+    renderCourseCatalog(filteredCourses);
+    renderStandaloneModules(filteredModules);
+    renderChallengeCatalog(filteredChallenges);
+}
+
+function setupLearningSearch() {
+    const input = document.getElementById('learning-search');
+    const clearButton = document.getElementById('btn-clear-learning-search');
+    if (!input || !clearButton) {
+        return;
+    }
+
+    input.addEventListener('input', () => {
+        state.learning.search = String(input.value || '');
+        if (state.learningSearchTimer) {
+            window.clearTimeout(state.learningSearchTimer);
+        }
+
+        state.learningSearchTimer = window.setTimeout(() => {
+            applyLearningSearch();
+        }, 200);
+    });
+
+    clearButton.addEventListener('click', () => {
+        state.learning.search = '';
+        input.value = '';
+        applyLearningSearch();
+    });
 }
 
 function renderPackageShowcase(rows) {
@@ -689,6 +1233,276 @@ function renderChallengeCatalog(rows) {
     `).join('');
 }
 
+function renderSelectedChallenge(row) {
+    const target = document.getElementById('challenge-selected');
+    if (!target) {
+        return;
+    }
+
+    if (!row) {
+        target.innerHTML = 'Select a challenge from the catalog to review details and participate.';
+        return;
+    }
+
+    target.innerHTML = `
+        <article class="detail-card">
+            <h3>${escapeHtml(row.title)}</h3>
+            <p>${escapeHtml(row.prompt_text || 'No prompt text provided.')}</p>
+            <div class="pill-row">
+                <span class="pill">${escapeHtml(row.difficulty_level || 'difficulty n/a')}</span>
+                <span class="pill">${escapeHtml(row.language_scope || 'language n/a')}</span>
+                <span class="pill">Entry Fee: ${escapeHtml(formatNumber(row.kodebits_cost || 0))} KB</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+            </div>
+        </article>
+    `;
+}
+
+function renderChallengeAttemptState(attemptState) {
+    const stateNode = document.getElementById('challenge-attempt-state');
+    const hintNode = document.getElementById('challenge-workbench-hint');
+    const submitButton = document.getElementById('challenge-submit-btn');
+    const evaluateButton = document.getElementById('challenge-evaluate-btn');
+    const pendingSubmissionField = document.getElementById('challenge-pending-submission-id');
+
+    if (!stateNode || !hintNode || !submitButton || !evaluateButton || !pendingSubmissionField) {
+        return;
+    }
+
+    if (!attemptState) {
+        stateNode.innerHTML = '<span class="pill">Attempts: 0/3</span><span class="pill">Select a challenge</span>';
+        hintNode.textContent = 'Select a challenge to start coding.';
+        submitButton.disabled = true;
+        evaluateButton.disabled = true;
+        pendingSubmissionField.value = '';
+        return;
+    }
+
+    const attemptsUsed = Number(attemptState.attempts_used || 0);
+    const maxAttempts = Number(attemptState.max_attempts || 3);
+    const attemptsRemaining = Number(attemptState.attempts_remaining || 0);
+    const isEvaluated = Boolean(attemptState.is_evaluated);
+    const pendingSubmissionId = attemptState.pending_submission_id ? Number(attemptState.pending_submission_id) : null;
+
+    stateNode.innerHTML = `
+        <span class="pill">Attempts: ${escapeHtml(attemptsUsed)} / ${escapeHtml(maxAttempts)}</span>
+        <span class="pill">Remaining: ${escapeHtml(attemptsRemaining)}</span>
+        ${isEvaluated ? renderStatusPill('Evaluated') : renderStatusPill('Awaiting Evaluation')}
+    `;
+
+    pendingSubmissionField.value = pendingSubmissionId ? String(pendingSubmissionId) : '';
+    submitButton.disabled = !Boolean(attemptState.can_submit);
+    evaluateButton.disabled = !Boolean(attemptState.can_evaluate);
+
+    if (isEvaluated) {
+        hintNode.textContent = 'Evaluation completed. This challenge is locked for new submissions.';
+        return;
+    }
+
+    if (pendingSubmissionId) {
+        hintNode.textContent = `Submission #${pendingSubmissionId} is ready. Click Evaluate Submission to see results and feedback.`;
+        return;
+    }
+
+    if (attemptsRemaining <= 0) {
+        hintNode.textContent = String(attemptState.lock_reason || 'Submission limit reached (3 attempts).');
+        return;
+    }
+
+    hintNode.textContent = `You can submit ${attemptsRemaining} more attempt(s). Attempt #3 will auto-evaluate.`;
+}
+
+async function syncChallengeAttemptState(challengeId) {
+    const id = Number(challengeId || 0);
+    if (id <= 0) {
+        state.challenges.attemptState = null;
+        renderChallengeAttemptState(null);
+        return;
+    }
+
+    try {
+        const result = await apiCall('challenge', 'attempt_state', { challenge_id: id });
+        state.challenges.attemptState = result?.data?.state || null;
+        renderChallengeAttemptState(state.challenges.attemptState);
+    } catch (error) {
+        state.challenges.attemptState = null;
+        renderChallengeAttemptState(null);
+        setStatus('error', escapeHtml(error.message || 'Unable to load challenge attempt state.'));
+    }
+}
+
+async function selectChallengeForWorkbench(challengeId, shouldScroll = false) {
+    const id = Number(challengeId || 0);
+    if (id <= 0) {
+        return;
+    }
+
+    state.challenges.selectedId = id;
+    const selected = findChallengeById(id);
+    renderSelectedChallenge(selected);
+
+    const workbenchId = document.getElementById('challenge-workbench-id');
+    if (workbenchId) {
+        workbenchId.value = String(id);
+    }
+
+    await syncChallengeAttemptState(id);
+
+    if (shouldScroll) {
+        document.getElementById('challenge-workbench-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function setupChallengeWorkbench() {
+    const form = document.getElementById('challenge-workbench-form');
+    const evaluateButton = document.getElementById('challenge-evaluate-btn');
+    const sourceField = document.getElementById('challenge-source');
+    if (!form || !evaluateButton || !sourceField) {
+        return;
+    }
+
+    renderChallengeAttemptState(null);
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const challengeId = Number(document.getElementById('challenge-workbench-id')?.value || 0);
+        if (challengeId <= 0) {
+            setStatus('error', 'Pick a challenge from the catalog first.');
+            return;
+        }
+
+        const attemptState = state.challenges.attemptState;
+        if (attemptState && !attemptState.can_submit) {
+            setStatus('error', String(attemptState.lock_reason || 'Submission is locked for this challenge.'));
+            return;
+        }
+
+        const sourceCode = String(sourceField.value || '').trim();
+        if (!sourceCode) {
+            setStatus('error', 'Source code is required before submitting.');
+            return;
+        }
+
+        let challenge = findChallengeById(challengeId);
+        if (!challenge) {
+            const challengeRes = await apiCall('interaction', 'browse_challenges');
+            state.challenges.rows = challengeRes.data.rows || [];
+            challenge = findChallengeById(challengeId);
+        }
+
+        const fee = Number(challenge?.kodebits_cost || 0);
+        const balance = Number(state.auth?.user?.kodebits_balance || 0);
+        const challengeTitle = String(challenge?.title || `Challenge #${challengeId}`);
+
+        if (fee > balance) {
+            setStatus('error', `Insufficient KodeBits. ${challengeTitle} requires ${formatNumber(fee)} KB but your wallet has ${formatNumber(balance)} KB.`);
+            return;
+        }
+
+        const confirmed = await openConfirmModal(`Submit solution for ${challengeTitle}? Entry fee: ${formatNumber(fee)} KB (charged once for paid challenges).`);
+        if (!confirmed) {
+            return;
+        }
+
+        const payload = {
+            challenge_id: challengeId,
+            language_name: String(document.getElementById('challenge-language')?.value || 'Python'),
+            source_code: sourceCode,
+        };
+
+        const result = await runAction('interaction.participate_challenge', () => apiCall('interaction', 'participate_challenge', payload));
+        if (!result) {
+            return;
+        }
+
+        if (result?.data?.attempt_state) {
+            state.challenges.attemptState = result.data.attempt_state;
+            renderChallengeAttemptState(state.challenges.attemptState);
+        } else {
+            await syncChallengeAttemptState(challengeId);
+        }
+
+        if (result?.data?.auto_evaluated) {
+            setStatus('success', `Attempt #${escapeHtml(result.data.attempt_number || 3)} auto-evaluated. Feedback is now available.`);
+        } else {
+            setStatus('success', `Submission #${escapeHtml(result.data.submission_id)} stored. Click Evaluate Submission when ready.`);
+        }
+
+        await loadChallengesHub();
+    });
+
+    evaluateButton.addEventListener('click', async () => {
+        const attemptState = state.challenges.attemptState;
+        const submissionId = Number(document.getElementById('challenge-pending-submission-id')?.value || 0);
+        if (!attemptState || !attemptState.can_evaluate || submissionId <= 0) {
+            setStatus('error', 'No pending submission available for evaluation. Submit code first.');
+            return;
+        }
+
+        const confirmed = await openConfirmModal(`Evaluate submission #${submissionId}? This will lock new submissions for this challenge.`);
+        if (!confirmed) {
+            return;
+        }
+
+        const result = await runAction('challenge.evaluate', () => apiCall('challenge', 'evaluate', { submission_id: submissionId }));
+        if (!result) {
+            return;
+        }
+
+        if (result?.data?.attempt_state) {
+            state.challenges.attemptState = result.data.attempt_state;
+            renderChallengeAttemptState(state.challenges.attemptState);
+        }
+
+        await loadChallengesHub();
+    });
+}
+
+function findChallengeById(challengeId) {
+    if (!challengeId) {
+        return null;
+    }
+
+    const id = Number(challengeId);
+    const fromChallengePage = state.challenges.rows.find((item) => Number(item.id) === id);
+    if (fromChallengePage) {
+        return fromChallengePage;
+    }
+
+    return state.learning.challenges.find((item) => Number(item.id) === id) || null;
+}
+
+function renderModuleChallengeCatalog(rows) {
+    const target = document.getElementById('module-challenge-catalog');
+    if (!target) {
+        return;
+    }
+
+    if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty-state">No published challenges are available yet.</div>';
+        return;
+    }
+
+    target.innerHTML = rows.slice(0, 6).map((row) => `
+        <article class="catalog-card">
+            <div>
+                <h3>${escapeHtml(row.title)}</h3>
+                <p>Languages: ${escapeHtml(row.language_scope)}</p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">${escapeHtml(row.difficulty_level)}</span>
+                ${renderStatusPill(row.status || 'status n/a')}
+                <span class="pill">${escapeHtml(formatLikes(row.likes_count || 0))}</span>
+            </div>
+            <div class="inline-actions">
+                <button type="button" data-quick="prefill-challenge" data-challenge-id="${escapeHtml(row.id)}">Participate</button>
+                <button type="button" class="secondary" data-quick="react" data-content-type="challenge" data-content-id="${escapeHtml(row.id)}">Like</button>
+            </div>
+        </article>
+    `).join('');
+}
+
 function normalizePayload(form) {
     const payload = {};
     new FormData(form).forEach((value, key) => {
@@ -769,7 +1583,7 @@ async function loadOverview() {
     renderRolePermissions(meRes.data.user.role);
     renderMetricCards(summaryRes.data.summary, meRes.data.user);
     renderHomeShortcuts();
-    renderTable('learning-table', learningRes.data.rows, 'You do not have any enrollments yet.');
+    renderLearningSnapshot(learningRes.data.rows);
     renderNotifications(notificationsRes.data.rows);
 }
 
@@ -781,25 +1595,52 @@ async function loadAccountCenter() {
 
     renderTable('request-table', requestsRes.data.rows, 'No contributor or instructor requests yet.');
     renderTable('credential-table', credentialsRes.data.rows, 'No instructor credentials submitted yet.');
+    renderRequestHistoryCards(requestsRes.data.rows || []);
+    renderCredentialHistoryCards(credentialsRes.data.rows || []);
 }
 
 async function loadLearningHub() {
-    const [coursesRes, modulesRes, challengesRes, leaderboardRes, feedbackRes, faqRes] = await Promise.all([
+    const [coursesRes, modulesRes] = await Promise.all([
         apiCall('interaction', 'browse_courses'),
         apiCall('interaction', 'standalone_modules'),
-        apiCall('interaction', 'browse_challenges'),
-        apiCall('interaction', 'view_leaderboard'),
-        apiCall('challenge', 'list_feedback'),
-        apiCall('interaction', 'faq_list'),
     ]);
 
-    renderCourseCatalog(coursesRes.data.rows);
-    renderStandaloneModules(modulesRes.data.rows);
-    renderChallengeCatalog(challengesRes.data.rows);
-    renderTable('leaderboard-table', leaderboardRes.data.rows, 'No leaderboard data available.');
+    state.learning.courses = coursesRes.data.rows || [];
+    state.learning.modules = modulesRes.data.rows || [];
+    state.learning.challenges = [];
+    applyLearningSearch();
     renderCourseModules([], null);
-    renderTable('feedback-table', feedbackRes.data.rows, 'No submissions yet.');
+}
+
+async function loadLeaderboardHub() {
+    const leaderboardRes = await apiCall('interaction', 'view_leaderboard');
+    renderTable('leaderboard-table', leaderboardRes.data.rows, 'No leaderboard data available.');
+}
+
+async function loadFaqHub() {
+    const faqRes = await apiCall('interaction', 'faq_list');
     renderFaq(faqRes.data.rows);
+}
+
+async function loadChallengesHub() {
+    const [challengeRes, feedbackRes] = await Promise.all([
+        apiCall('interaction', 'browse_challenges'),
+        apiCall('challenge', 'list_feedback'),
+    ]);
+
+    state.challenges.rows = challengeRes.data.rows || [];
+    renderChallengeCatalog(state.challenges.rows);
+    renderTable('feedback-table', feedbackRes.data.rows, 'No submissions yet.');
+
+    const params = new URLSearchParams(window.location.search);
+    const challengeId = Number(params.get('challenge_id') || 0);
+    const selected = challengeId > 0 ? findChallengeById(challengeId) : (findChallengeById(state.challenges.selectedId) || state.challenges.rows[0] || null);
+    if (selected?.id) {
+        await selectChallengeForWorkbench(Number(selected.id));
+    } else {
+        renderSelectedChallenge(null);
+        renderChallengeAttemptState(null);
+    }
 }
 
 async function loadCreatorWorkspace() {
@@ -819,25 +1660,50 @@ async function loadCreatorWorkspace() {
 }
 
 async function loadGamification() {
-    const [presetsRes, leaderboardRes] = await Promise.all([
+    const [presetsRes, leaderboardRes, weeklyRes] = await Promise.all([
         apiCall('gamification', 'list_presets'),
         apiCall('gamification', 'leaderboard'),
+        apiCall('gamification', 'list_weekly'),
     ]);
 
     renderTable('preset-table', presetsRes.data.rows, 'No presets available.');
+    renderPresetCards(presetsRes.data.rows || []);
     renderTable('gamification-leaderboard-table', leaderboardRes.data.rows, 'No ranking data available.');
+    renderTable('weekly-table', weeklyRes.data.rows, 'No weekly challenge queue available.');
+    renderWeeklyCards(weeklyRes.data.rows || []);
+
+    const params = new URLSearchParams(window.location.search);
+    const challengeId = Number(params.get('challenge_id') || 0);
+    if (challengeId > 0) {
+        prefillField('form[data-module="gamification"][data-action="create_weekly"] input[name="challenge_id"]', challengeId);
+    }
 }
 
 async function loadFinance() {
-    const packagePromise = apiCall('finance', 'packages');
     const earningsPromise = roleAllowed('contributor,instructor,administrator')
         ? apiCall('finance', 'earnings')
         : Promise.resolve({ data: { rows: [] } });
+    const payoutPromise = roleAllowed('contributor,instructor,administrator')
+        ? apiCall('finance', 'list_payout_requests')
+        : Promise.resolve({ data: { rows: [] } });
 
-    const [packagesRes, earningsRes] = await Promise.all([packagePromise, earningsPromise]);
+    const [earningsRes, payoutRes] = await Promise.all([earningsPromise, payoutPromise]);
+    renderTable('earnings-table', earningsRes.data.rows, 'No creator earnings available for this role.');
+    renderEarningsCards(earningsRes.data.rows || []);
+    renderTable('payout-requests-table', payoutRes.data.rows, 'No payout requests available for this role.');
+    renderPayoutRequestCards(payoutRes.data.rows || []);
+}
+
+async function loadTopup() {
+    const [packagesRes, historyRes] = await Promise.all([
+        apiCall('finance', 'packages'),
+        apiCall('finance', 'transaction_history'),
+    ]);
+
     renderPackageShowcase(packagesRes.data.rows);
     renderTable('finance-packages-table', packagesRes.data.rows, 'No packages available.');
-    renderTable('earnings-table', earningsRes.data.rows, 'No creator earnings available for this role.');
+    renderTable('topup-history-table', historyRes.data.rows, 'No transactions yet.');
+    renderTopupHistoryCards(historyRes.data.rows || []);
 }
 
 async function loadGovernance() {
@@ -847,6 +1713,7 @@ async function loadGovernance() {
 
     const requests = [
         apiCall('admin', 'list_users'),
+        apiCall('challenge', 'list'),
         apiCall('admin', 'contributor_requests'),
         apiCall('admin', 'list_credentials'),
         apiCall('admin', 'list_reports'),
@@ -858,11 +1725,22 @@ async function loadGovernance() {
         requests.push(Promise.resolve({ data: { report: {} } }));
     }
 
-    const [usersRes, requestsRes, credentialsRes, reportsRes, systemRes] = await Promise.all(requests);
+    const [usersRes, challengeRes, requestsRes, credentialsRes, reportsRes, systemRes] = await Promise.all(requests);
+    const challengeQueue = (challengeRes.data.rows || []).filter((row) => {
+        const status = String(row.status || '').toLowerCase();
+        return !['approved', 'published', 'archived', 'deleted'].includes(status);
+    });
+
     renderTable('users-table', usersRes.data.rows, 'No user accounts found.');
+    renderUserGovernanceCards(usersRes.data.rows || []);
+    renderTable('challenge-review-table', challengeQueue, 'No challenges are waiting for review.');
+    renderChallengeReviewCards(challengeQueue);
     renderTable('requests-review-table', requestsRes.data.rows, 'No contributor requests found.');
     renderTable('credentials-review-table', credentialsRes.data.rows, 'No instructor credentials found.');
+    renderContributorRequestCards(requestsRes.data.rows || []);
+    renderCredentialReviewCards(credentialsRes.data.rows || []);
     renderTable('reports-table', reportsRes.data.rows, 'No content reports found.');
+    renderReportGovernanceCards(reportsRes.data.rows || []);
 
     const systemRows = Object.entries(systemRes.data.report || {}).map(([metric, value]) => ({ metric, value }));
     renderTable('system-reports-table', systemRows, 'System reports are only available to administrators.');
@@ -883,6 +1761,18 @@ async function refreshCurrentPage() {
             await loadLearningHub();
         }
 
+        if (page === 'challenges') {
+            await loadChallengesHub();
+        }
+
+        if (page === 'leaderboard') {
+            await loadLeaderboardHub();
+        }
+
+        if (page === 'faq') {
+            await loadFaqHub();
+        }
+
         if (page === 'creator') {
             await loadCreatorWorkspace();
         }
@@ -893,6 +1783,10 @@ async function refreshCurrentPage() {
 
         if (page === 'finance') {
             await loadFinance();
+        }
+
+        if (page === 'topup') {
+            await loadTopup();
         }
 
         if (page === 'governance') {
@@ -969,12 +1863,34 @@ async function handleQuickAction(button) {
 
     if (action === 'prefill-challenge') {
         const challengeId = Number(button.getAttribute('data-challenge-id'));
-        prefillField('#participate-form input[name="challenge_id"]', challengeId);
-        const form = document.getElementById('participate-form');
-        if (form) {
-            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (document.body.getAttribute('data-page') !== 'challenges') {
+            window.location.href = `challenges.php?challenge_id=${encodeURIComponent(String(challengeId))}`;
+            return;
         }
-        setStatus('info', `Challenge ${escapeHtml(challengeId)} is ready in the participation form.`);
+
+        await selectChallengeForWorkbench(challengeId, true);
+        setStatus('info', `Challenge ${escapeHtml(challengeId)} is ready in the coding workbench.`);
+        return;
+    }
+
+    if (action === 'jump-to-learning-challenges') {
+        window.location.href = 'challenges.php';
+        return;
+    }
+
+    if (action === 'open-first-challenge') {
+        const firstChallenge = state.learning.challenges?.[0];
+        if (firstChallenge?.id) {
+            if (document.body.getAttribute('data-page') === 'learn') {
+                window.location.href = `challenges.php?challenge_id=${encodeURIComponent(String(firstChallenge.id))}`;
+                return;
+            }
+
+            window.location.href = `challenges.php?challenge_id=${encodeURIComponent(String(firstChallenge.id))}`;
+            return;
+        }
+
+        window.location.href = 'challenges.php';
         return;
     }
 
@@ -1132,6 +2048,92 @@ async function handleQuickAction(button) {
     if (action === 'row-challenge-submit' && row) {
         prefillApiForm('challenge', 'submit', { challenge_id: row.id });
         setStatus('info', `Challenge ${escapeHtml(row.id)} loaded into the submission form.`);
+        return;
+    }
+
+    if (action === 'row-challenge-configure-weekly' && row) {
+        if (document.body.getAttribute('data-page') === 'rewards') {
+            prefillField('form[data-module="gamification"][data-action="create_weekly"] input[name="challenge_id"]', Number(row.id));
+            setStatus('info', `Challenge ${escapeHtml(row.id)} loaded for weekly configuration.`);
+            return;
+        }
+
+        window.location.href = `rewards.php?challenge_id=${encodeURIComponent(String(row.id))}`;
+        return;
+    }
+
+    if (action === 'row-challenge-approve' && row) {
+        const result = await runAction('challenge.review approve', () => apiCall('challenge', 'review', {
+            challenge_id: Number(row.id),
+            review_status: 'Approved',
+            review_notes: 'Approved from governance review queue.',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-challenge-reject' && row) {
+        const result = await runAction('challenge.review reject', () => apiCall('challenge', 'review', {
+            challenge_id: Number(row.id),
+            review_status: 'Rejected',
+            review_notes: 'Rejected from governance review queue.',
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-preset-use' && row) {
+        prefillApiForm('gamification', 'create_activity', {
+            preset_id: row.id,
+            activity_name: `${row.preset_name || 'Preset'} Activity`,
+        });
+        setStatus('info', `Preset ${escapeHtml(row.id)} loaded into activity form.`);
+        return;
+    }
+
+    if (action === 'row-weekly-evaluate' && row) {
+        const result = await runAction('gamification.evaluate_weekly', () => apiCall('gamification', 'evaluate_weekly', {
+            weekly_challenge_id: Number(row.id),
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-weekly-publish' && row) {
+        const result = await runAction('gamification.publish_weekly', () => apiCall('gamification', 'publish_weekly', {
+            weekly_challenge_id: Number(row.id),
+        }));
+        if (result) {
+            await refreshCurrentPage();
+        }
+        return;
+    }
+
+    if (action === 'row-earning-request-payout' && row) {
+        prefillApiForm('finance', 'request_payout', {
+            creator_earning_id: row.id,
+            request_amount_php: Number(row.creator_share_php || 0),
+            payout_channel: 'GCash',
+        });
+        setStatus('info', `Earning ${escapeHtml(row.id)} loaded into payout request form.`);
+        return;
+    }
+
+    if (action === 'row-leaderboard-grant' && row) {
+        prefillApiForm('gamification', 'grant_reward', {
+            user_id: row.id,
+            xp_awarded: 10,
+            kodebits_awarded: 2,
+            reference_type: 'leaderboard_manual',
+            reference_id: `leaderboard-${row.id}`,
+        });
+        setStatus('info', `User ${escapeHtml(row.id)} loaded into grant reward form.`);
         return;
     }
 
@@ -1374,8 +2376,11 @@ async function bootstrap() {
     }
 
     setupModal();
+    setupDeveloperConsoles();
     setupButtons();
+    setupLearningSearch();
     setupForms();
+    setupChallengeWorkbench();
     applyRoleVisibility();
 
     const me = await runAction('auth.me bootstrap', () => apiCall('auth', 'me'));

@@ -59,10 +59,14 @@ function renderWorkspaceNav(string $active, string $title, string $subtitle): vo
     $items = [
         'home.php' => ['id' => 'home', 'label' => 'Homepage', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
         'learn.php' => ['id' => 'learn', 'label' => 'Learning', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
+        'challenges.php' => ['id' => 'challenges', 'label' => 'Challenges', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
+        'leaderboard.php' => ['id' => 'leaderboard', 'label' => 'Leaderboard', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
+        'faq.php' => ['id' => 'faq', 'label' => 'FAQ', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
         'profile.php' => ['id' => 'profile', 'label' => 'Profile', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
         'creator.php' => ['id' => 'creator', 'label' => 'Creator', 'roles' => 'contributor,instructor,administrator'],
         'rewards.php' => ['id' => 'rewards', 'label' => 'Rewards', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
-        'finance.php' => ['id' => 'finance', 'label' => 'Finance', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
+        'topup.php' => ['id' => 'topup', 'label' => 'Top Up', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
+        'finance.php' => ['id' => 'finance', 'label' => 'Earnings', 'roles' => 'learner,contributor,instructor,moderator,administrator'],
         'governance.php' => ['id' => 'governance', 'label' => 'Governance', 'roles' => 'moderator,administrator'],
     ];
 

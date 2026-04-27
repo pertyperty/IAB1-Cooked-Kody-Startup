@@ -8,14 +8,21 @@ renderWorkspaceIntro('E05 + E06. Module Access', 'Focused Module View', 'Use thi
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
-        <div class="surface inset-surface">
-            <div class="surface-header compact-header">
-                <h3 id="module-page-heading">Loading module...</h3>
-                <div class="inline-actions">
-                    <a class="button-link secondary-link" href="learn.php">Back to Learning</a>
+        <div class="split-grid">
+            <div class="surface inset-surface">
+                <div class="surface-header compact-header">
+                    <h3 id="module-page-heading">Loading module...</h3>
+                    <div class="inline-actions">
+                        <a class="button-link secondary-link" href="learn.php">Back to Learning</a>
+                    </div>
                 </div>
+                <div id="module-reader" class="detail-card">Preparing module content...</div>
             </div>
-            <div id="module-reader" class="detail-card">Preparing module content...</div>
+
+            <article class="surface inset-surface">
+                <h3>Code Challenges</h3>
+                <div id="module-challenge-catalog" class="catalog-list"></div>
+            </article>
         </div>
     </section>
 </main>
