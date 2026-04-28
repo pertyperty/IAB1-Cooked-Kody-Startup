@@ -7,26 +7,65 @@ renderPublicNav('home');
 ?>
 <header class="shell auth-hero">
     <div>
-        <p class="eyebrow">Authentication First</p>
+        <p class="eyebrow">Public Gateway</p>
         <h1>Welcome to Kody</h1>
-        <p class="hero-copy">This is the website entry page. Start from here, then continue to login, registration, verification, recovery, or the workspace homepage.</p>
+        <p class="hero-copy">Start from the gateway, then continue into a dedicated login, registration, verification, recovery, or workspace page. This keeps each task in its own clean interface.</p>
     </div>
 
     <div class="hero-note lockout-card">
-        <strong>Account Lockout Policy</strong>
-        <p>3 failed attempts = 15 minutes, 6 = 1 hour, 9 = 24 hours.</p>
-        <p>Admin accounts cannot use self-service account recovery.</p>
+        <strong>System Audit Snapshot</strong>
+        <p>The page structure is now split by workflow, but backend hardening is still needed around CSRF, open CORS policy, and the monolithic API router.</p>
+        <p>Admin accounts cannot use self-service account recovery, and login lockout still applies at 3, 6, and 9 failed attempts.</p>
     </div>
 </header>
+<?php renderAuthFlowRail('index'); ?>
 
 <main class="shell auth-layout">
+    <section class="surface auth-surface">
+        <div class="surface-header">
+            <div>
+                <p class="eyebrow">Choose A Page</p>
+                <h2>Separate Web Interfaces</h2>
+            </div>
+            <p class="section-copy">Each public workflow now routes to its own page instead of being bundled into one oversized entry form.</p>
+        </div>
+        <div id="auth-status" class="status-banner info">Choose a destination page below to continue.</div>
+        <div class="gateway-grid">
+            <a class="gateway-card" href="login.php">
+                <span class="rail-kicker">Returning User</span>
+                <strong>Login Page</strong>
+                <p>Use the dedicated sign-in screen with seed-account shortcuts and lockout messaging.</p>
+            </a>
+            <a class="gateway-card" href="register.php">
+                <span class="rail-kicker">New Account</span>
+                <strong>Registration Page</strong>
+                <p>Create a learner account or start an instructor-track application with separate verification inputs.</p>
+            </a>
+            <a class="gateway-card" href="verify.php">
+                <span class="rail-kicker">Activation</span>
+                <strong>Verification Page</strong>
+                <p>Activate an account with the generated token in its own focused verification flow.</p>
+            </a>
+            <a class="gateway-card" href="recover.php">
+                <span class="rail-kicker">Support</span>
+                <strong>Recovery Page</strong>
+                <p>Request a reset token and complete password recovery in a dedicated support interface.</p>
+            </a>
+            <a class="gateway-card" href="home.php">
+                <span class="rail-kicker">Authenticated</span>
+                <strong>Workspace Homepage</strong>
+                <p>Enter the logged-in product and branch into learning, creator, finance, rewards, or governance areas.</p>
+            </a>
+        </div>
+    </section>
+
     <section class="surface intro-surface">
         <div class="surface-header">
             <div>
                 <p class="eyebrow">Seed Accounts</p>
                 <h2>Quick Role Testing</h2>
             </div>
-            <p class="section-copy">Select a role to prefill the login form.</p>
+            <p class="section-copy">Pick a role here and the system will carry the credentials into the dedicated login page for you.</p>
         </div>
         <div class="seed-grid">
             <button type="button" class="seed-card" data-seed-email="learner@kody.local" data-seed-password="learner123"><strong>Learner</strong><span>learner@kody.local</span></button>
@@ -35,53 +74,43 @@ renderPublicNav('home');
             <button type="button" class="seed-card" data-seed-email="moderator@kody.local" data-seed-password="moderator123"><strong>Moderator</strong><span>moderator@kody.local</span></button>
             <button type="button" class="seed-card" data-seed-email="admin@kody.local" data-seed-password="admin123"><strong>Administrator</strong><span>admin@kody.local</span></button>
         </div>
-    </section>
-
-    <section class="surface auth-surface">
-        <div id="auth-status" class="status-banner info">Use this page as your starting point, then continue with login or registration.</div>
-
-        <div class="catalog-grid">
-            <form id="login-form" class="stack-form catalog-card">
-                <h3>UC A01 User Login</h3>
-                <input name="email" type="email" placeholder="Email" required>
-                <input name="password" type="password" placeholder="Password" required>
-                <button type="submit">Login</button>
-            </form>
-
-            <form id="register-form" class="stack-form catalog-card">
-                <h3>UC A03 Register Account</h3>
-                <input name="full_name" placeholder="Full name" required>
-                <input name="email" type="email" placeholder="Email" required>
-                <input name="password" type="password" placeholder="Password" required>
-                <select name="requested_role" id="register-role-select">
-                    <option value="learner">Learner</option>
-                    <option value="instructor">Instructor</option>
-                </select>
-
-                <div id="instructor-fields" class="context-panel hidden-block">
-                    <p class="section-copy">Instructor applications require verification details on signup.</p>
-                    <input name="credential_title" placeholder="Primary credential title">
-                    <input name="file_url" placeholder="Credential file or portfolio URL">
-                    <textarea name="expertise_summary" placeholder="Teaching background, expertise, and verification notes"></textarea>
-                </div>
-
-                <button type="submit">Register Account</button>
-            </form>
-        </div>
-
         <div class="inline-actions">
+            <a class="button-link secondary-link" href="app.php">Open Legacy Entry</a>
             <a class="button-link secondary-link" href="login.php">Go to Login</a>
-            <a class="button-link secondary-link" href="register.php">Go to Register</a>
-            <a class="button-link secondary-link" href="verify.php">Verify Email</a>
-            <a class="button-link secondary-link" href="recover.php">Recover Account</a>
-            <a class="button-link secondary-link" href="home.php">Go to Homepage</a>
+        </div>
+    </section>
+    <section class="surface intro-surface">
+        <div class="surface-header">
+            <div>
+                <p class="eyebrow">Audit Priorities</p>
+                <h2>Next Hardening Areas</h2>
+            </div>
+            <p class="section-copy">These are the cross-cutting items that matter most after the interface cleanup.</p>
+        </div>
+        <div class="catalog-grid">
+            <article class="catalog-card">
+                <h3>Security Controls</h3>
+                <p>Write endpoints still need CSRF protection, and the API currently allows a permissive wildcard CORS policy.</p>
+            </article>
+            <article class="catalog-card">
+                <h3>Backend Structure</h3>
+                <p>The API router is doing too much in one file, which makes audits and targeted maintenance slower than they should be.</p>
+            </article>
+            <article class="catalog-card">
+                <h3>Session Strategy</h3>
+                <p>Auth state is still stored client-side for page bootstrapping, so true server-side page guards remain an open architectural task.</p>
+            </article>
+            <article class="catalog-card">
+                <h3>Verification Depth</h3>
+                <p>The site covers the use cases well, but scenario-based regression checks are still missing for the role matrix and high-risk flows.</p>
+            </article>
         </div>
     </section>
 </main>
 
 <section class="shell response-console">
-    <h2>Authentication Response Log</h2>
-    <pre id="auth-response">Waiting for authentication actions...</pre>
+    <h2>Gateway Notes</h2>
+    <pre id="auth-response">The gateway now routes users into dedicated public pages instead of embedding login and registration forms directly here.</pre>
 </section>
 <?php
 renderFooter(['assets/js/auth.js']);

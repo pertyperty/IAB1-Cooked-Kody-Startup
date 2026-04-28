@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/site.php';
 
 renderHead('Kody Learning', 'workspace-page', ['data-page' => 'learn']);
-renderWorkspaceNav('learn', 'Learning Hub', 'Browse courses, modules, leaderboards, and FAQ entries. Challenge participation is in its own dedicated page.');
-renderWorkspaceIntro('E. User Interaction and Engagement', 'Learning Experience', 'Learners and inherited roles use this page for the core study and challenge flow.');
+renderWorkspaceNav('learn', 'Learning Hub', 'Browse courses and modules in a clean learning-first interface. Challenge coding is in a dedicated page.');
+renderWorkspaceIntro('E. User Interaction and Engagement', 'Learning Experience', 'This page focuses only on studying: course discovery, module reading, and learning progression.');
+renderLearningRail('learn');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
@@ -36,27 +37,14 @@ renderWorkspaceIntro('E. User Interaction and Engagement', 'Learning Experience'
             </article>
         </div>
 
-        <div class="catalog-grid">
-            <article class="surface inset-surface">
-                <article class="catalog-card">
-                    <h3>Leaderboard Moved</h3>
-                    <p>Ranking is now available in a dedicated Leaderboard page.</p>
-                    <div class="inline-actions">
-                        <a class="button-link" href="leaderboard.php">Open Leaderboard</a>
-                    </div>
-                </article>
-            </article>
-
-            <article class="surface inset-surface">
-                <article class="catalog-card">
-                    <h3>Challenges Moved</h3>
-                    <p>Challenge browsing and participation now live in the dedicated Challenges page to keep learning and challenge workflows cleanly separated.</p>
-                    <div class="inline-actions">
-                        <a class="button-link" href="challenges.php">Open Challenges Page</a>
-                    </div>
-                </article>
-            </article>
-        </div>
+        <article class="surface inset-surface">
+            <h3>Related Areas</h3>
+            <div class="inline-actions">
+                <a class="button-link" href="challenges.php">Open Challenges</a>
+                <a class="button-link" href="leaderboard.php">Open Leaderboard</a>
+                <a class="button-link" href="faq.php">Open FAQ</a>
+            </div>
+        </article>
 
         <div class="split-grid">
             <article class="surface inset-surface">
@@ -75,57 +63,14 @@ renderWorkspaceIntro('E. User Interaction and Engagement', 'Learning Experience'
             </article>
         </div>
 
-        <div class="split-grid">
-            <article class="surface inset-surface">
-                <article class="catalog-card">
-                    <h3>FAQ Moved</h3>
-                    <p>Frequently asked questions now live in a dedicated FAQ page.</p>
-                    <div class="inline-actions">
-                        <a class="button-link" href="faq.php">Open FAQ</a>
-                    </div>
-                </article>
-            </article>
-
-            <article class="surface inset-surface">
-                <article class="catalog-card">
-                    <h3>Actual Learning Flow</h3>
-                    <p>Use the course and module cards above to study content. Challenge participation is available in the dedicated Challenges page.</p>
-                </article>
-            </article>
-        </div>
-    </section>
-</main>
-<section class="shell response-console developer-console">
-    <h2>For Testing: Direct Learning Tools</h2>
-    <div class="split-grid">
-        <article class="surface inset-surface">
-            <form id="enroll-form" class="stack-form api-form" data-module="interaction" data-action="enroll_course">
-                <h3>UC E04 Enroll in Course</h3>
-                <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                <button type="submit">Enroll</button>
-            </form>
-
-            <form id="course-access-form" class="stack-form api-form" data-module="interaction" data-action="access_course_module">
-                <h3>UC E05 Access Course Module</h3>
-                <input name="course_id" type="number" min="1" placeholder="Course ID" required>
-                <input name="module_id" type="number" min="1" placeholder="Module ID" required>
-                <button type="submit">Access Module</button>
-            </form>
-
-            <form id="standalone-access-form" class="stack-form api-form" data-module="interaction" data-action="access_standalone_module">
-                <h3>UC E06 Access Standalone Module</h3>
-                <input name="module_id" type="number" min="1" placeholder="Standalone Module ID" required>
-                <button type="submit">Access Standalone Module</button>
-            </form>
-        </article>
         <article class="surface inset-surface">
             <article class="catalog-card">
-                <h3>Challenge Tools</h3>
-                <p>Challenge participation and execution feedback tools were moved to <strong>challenges.php</strong>.</p>
+                <h3>Learning Flow</h3>
+                <p>Use the course and standalone module cards above, then open a module in reader mode for focused study.</p>
             </article>
         </article>
-    </div>
-</section>
+    </section>
+</main>
 <?php
 renderWorkspaceFooter();
 renderFooter(['assets/js/dashboard.js']);

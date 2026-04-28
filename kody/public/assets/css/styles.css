@@ -429,6 +429,80 @@ h3 {
     gap: 1rem;
 }
 
+.interface-rail {
+    padding-bottom: 1rem;
+}
+
+.interface-rail-surface {
+    padding: 1.1rem 1.2rem;
+}
+
+.rail-grid,
+.gateway-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+}
+
+.rail-card,
+.gateway-card {
+    display: block;
+    padding: 1rem;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.rail-card:hover,
+.gateway-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(10, 123, 118, 0.32);
+    box-shadow: 0 12px 24px rgba(22, 23, 28, 0.08);
+}
+
+.rail-card.active {
+    border-color: rgba(10, 123, 118, 0.4);
+    background: linear-gradient(180deg, rgba(217, 244, 239, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.rail-kicker {
+    display: inline-block;
+    margin-bottom: 0.4rem;
+    color: var(--accent-strong);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.rail-card strong,
+.gateway-card strong {
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.rail-card p,
+.gateway-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.gateway-card {
+    background: linear-gradient(180deg, rgba(255, 250, 244, 0.96), rgba(242, 252, 250, 0.92));
+}
+
+.gateway-card.current {
+    border-style: dashed;
+}
+
+.gateway-card .button-link {
+    margin-top: 0.8rem;
+}
+
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -482,6 +556,29 @@ h3 {
 .faq-list {
     display: grid;
     gap: 0.8rem;
+}
+
+.cms-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(236, 248, 245, 0.78));
+}
+
+.leaderboard-card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(244, 248, 255, 0.8));
+    border-color: rgba(139, 164, 204, 0.45);
+}
+
+.leaderboard-card h3 {
+    color: #2e3a5f;
+}
+
+#paygate-form {
+    border-style: solid;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 250, 247, 0.86));
+}
+
+#paygate-package-label {
+    font-family: 'IBM Plex Mono', monospace;
+    color: #355c58;
 }
 
 .search-bar-wrap input {

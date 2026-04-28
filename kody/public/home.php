@@ -3,11 +3,27 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/site.php';
 
 renderHead('Kody Homepage', 'workspace-page', ['data-page' => 'home']);
-renderWorkspaceNav('home', 'Kody Homepage', 'Your logged-in homepage shows your profile state, learning metrics, notifications, and connected-service style interfaces.');
-renderWorkspaceIntro('Homepage', 'Welcome Back', 'This is the main logged-in website landing page, not just a single dashboard dump.');
+renderWorkspaceNav('home', 'Kody Homepage', 'Your logged-in homepage shows profile state, progress, notifications, and operational shortcuts in a cleaner dashboard.');
+renderWorkspaceIntro('Homepage', 'Welcome Back', 'This is your main dashboard with quick context and direct workflow entry points.');
+renderWorkspaceAreasRail('home');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
+        <div class="split-grid">
+            <article class="surface inset-surface">
+                <h3>Today Focus</h3>
+                <div class="pill-row">
+                    <span class="pill">Continue learning modules</span>
+                    <span class="pill">Attempt challenge</span>
+                    <span class="pill">Track rank movement</span>
+                </div>
+            </article>
+            <article class="surface inset-surface">
+                <h3>Quick Snapshot</h3>
+                <p class="section-copy">Use metric cards and operational shortcuts below to navigate your most important tasks in one click.</p>
+            </article>
+        </div>
+
         <div id="overview-metrics" class="metrics-grid"></div>
         <div class="split-grid">
             <article class="surface inset-surface">

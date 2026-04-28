@@ -16,6 +16,7 @@ renderPublicNav('verify');
         <p>The verification token is shown through the local testing mailbox instead of a real email provider.</p>
     </div>
 </header>
+<?php renderAuthFlowRail('verify'); ?>
 
 <main class="shell auth-layout">
     <section class="surface auth-surface">

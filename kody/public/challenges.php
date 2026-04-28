@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/site.php';
 
 renderHead('Kody Challenges', 'workspace-page', ['data-page' => 'challenges']);
-renderWorkspaceNav('challenges', 'Challenge Arena', 'Browse challenge prompts, confirm participation, and track your execution feedback in a dedicated challenge page.');
-renderWorkspaceIntro('E07 + E08. Challenge Participation', 'Challenge Experience', 'Participating in challenges is handled in this dedicated page with entry-fee confirmation and submission tracking.');
+renderWorkspaceNav('challenges', 'Challenge Arena', 'Browse available coding challenges and jump into a dedicated coding page per challenge.');
+renderWorkspaceIntro('E07. Challenge Discovery', 'Challenge Catalog', 'Choose a challenge here, then continue to the separate coding page for submission and evaluation.');
+renderLearningRail('challenges');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
@@ -20,51 +21,21 @@ renderWorkspaceIntro('E07 + E08. Challenge Participation', 'Challenge Experience
             <article class="surface inset-surface">
                 <h3>Selected Challenge</h3>
                 <div id="challenge-selected" class="detail-card">Select a challenge from the catalog to review details and participate.</div>
-
-                <form id="challenge-workbench-form" class="stack-form">
-                    <h3>Coding Workbench</h3>
-                    <p class="muted-note">Submit your code first, then click Evaluate Submission when ready. You have up to 3 submission attempts. Attempt 3 auto-evaluates.</p>
-
-                    <input id="challenge-workbench-id" name="challenge_id" type="hidden" value="">
-
-                    <div id="challenge-attempt-state" class="pill-row">
-                        <span class="pill">Attempts: 0/3</span>
-                        <span class="pill">No submission yet</span>
-                    </div>
-
-                    <select id="challenge-language" name="language_name">
-                        <option>Python</option>
-                        <option>Java</option>
-                        <option>C++</option>
-                        <option>JavaScript</option>
-                        <option>PHP</option>
-                    </select>
-
-                    <div class="cli-panel">
-                        <div class="cli-header">kody@challenge:~$ nano solution.code</div>
-                        <textarea id="challenge-source" name="source_code" class="cli-source" placeholder="# Write your solution here&#10;def solve():&#10;    return 'ok'" required></textarea>
-                    </div>
-
-                    <input id="challenge-pending-submission-id" type="hidden" value="">
-                    <div class="inline-actions">
-                        <button id="challenge-submit-btn" type="submit">Submit Attempt</button>
-                        <button id="challenge-evaluate-btn" type="button" class="secondary">Evaluate Submission</button>
-                    </div>
-                    <p id="challenge-workbench-hint" class="muted-note">Select a challenge to start coding.</p>
-                </form>
+                <article class="catalog-card">
+                    <h3>Continue to Coding Page</h3>
+                    <p>Click Participate from any challenge card to open a separate coding interface page with submit and evaluate controls.</p>
+                </article>
             </article>
         </div>
 
         <div class="split-grid">
             <article class="surface inset-surface">
-                <h3>Execution Feedback</h3>
-                <div id="feedback-table" class="table-wrap"></div>
-
-                <form id="feedback-form" class="stack-form api-form" data-module="interaction" data-action="view_feedback">
-                    <h3>View Specific Feedback</h3>
-                    <input name="submission_id" type="number" min="1" placeholder="Submission ID" required>
-                    <button type="submit">View Feedback</button>
-                </form>
+                <h3>Flow Preview</h3>
+                <article class="catalog-card">
+                    <p>1) Browse and pick challenge.</p>
+                    <p>2) Open dedicated coding page.</p>
+                    <p>3) Submit, then evaluate manually. Third submit auto-evaluates.</p>
+                </article>
             </article>
 
             <article class="surface inset-surface">

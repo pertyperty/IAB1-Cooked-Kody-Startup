@@ -18,6 +18,7 @@ renderPublicNav('login');
         <p>Use the seed-account cards below for quick role testing.</p>
     </div>
 </header>
+<?php renderAuthFlowRail('login'); ?>
 
 <main class="shell auth-layout">
     <section class="surface intro-surface">

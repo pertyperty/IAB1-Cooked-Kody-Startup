@@ -16,6 +16,7 @@ renderPublicNav('register');
         <p>The site will generate an email-verification token after registration so the account can be activated locally.</p>
     </div>
 </header>
+<?php renderAuthFlowRail('register'); ?>
 
 <main class="shell auth-layout">
     <section class="surface auth-surface">

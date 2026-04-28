@@ -117,6 +117,96 @@ function renderWorkspaceIntro(string $eyebrow, string $heading, string $copy): v
     echo '</section>';
 }
 
+function renderInterfaceRail(string $eyebrow, string $heading, string $copy, array $items): void
+{
+    echo '<section class="shell interface-rail">';
+    echo '<div class="surface interface-rail-surface">';
+    echo '<div class="surface-header">';
+    echo '<div>';
+    echo '<p class="eyebrow">' . htmlspecialchars($eyebrow, ENT_QUOTES) . '</p>';
+    echo '<h2>' . htmlspecialchars($heading, ENT_QUOTES) . '</h2>';
+    echo '</div>';
+    echo '<p class="section-copy">' . htmlspecialchars($copy, ENT_QUOTES) . '</p>';
+    echo '</div>';
+    echo '<div class="rail-grid">';
+
+    foreach ($items as $item) {
+        $isActive = !empty($item['active']);
+        $className = $isActive ? 'rail-card active' : 'rail-card';
+
+        echo '<a class="' . $className . '" href="' . htmlspecialchars((string) $item['href'], ENT_QUOTES) . '">';
+        echo '<span class="rail-kicker">' . htmlspecialchars((string) $item['kicker'], ENT_QUOTES) . '</span>';
+        echo '<strong>' . htmlspecialchars((string) $item['title'], ENT_QUOTES) . '</strong>';
+        echo '<p>' . htmlspecialchars((string) $item['copy'], ENT_QUOTES) . '</p>';
+        echo '</a>';
+    }
+
+    echo '</div>';
+    echo '</div>';
+    echo '</section>';
+}
+
+function renderAuthFlowRail(string $active): void
+{
+    renderInterfaceRail(
+        'Separated Auth Flow',
+        'Public Entry Interfaces',
+        'Each authentication task lives in its own page so the public flow stays predictable and easier to test.',
+        [
+            ['href' => 'index.php', 'kicker' => 'Gateway', 'title' => 'Start Here', 'copy' => 'Choose the correct authentication path or jump into the workspace.', 'active' => $active === 'index'],
+            ['href' => 'login.php', 'kicker' => 'A01', 'title' => 'Login', 'copy' => 'Returning users authenticate here with seed-account shortcuts available.', 'active' => $active === 'login'],
+            ['href' => 'register.php', 'kicker' => 'A03', 'title' => 'Register', 'copy' => 'New users create learner or instructor-track accounts here.', 'active' => $active === 'register'],
+            ['href' => 'verify.php', 'kicker' => 'A04', 'title' => 'Verify', 'copy' => 'Email verification is isolated into its own activation screen.', 'active' => $active === 'verify'],
+            ['href' => 'recover.php', 'kicker' => 'A02', 'title' => 'Recover', 'copy' => 'Password recovery and reset stay together in a dedicated support page.', 'active' => $active === 'recover'],
+        ]
+    );
+}
+
+function renderLearningRail(string $active): void
+{
+    renderInterfaceRail(
+        'Learning Interfaces',
+        'Study, Challenge, and Reference Pages',
+        'Content discovery, challenge work, rankings, and help are split into separate pages instead of one overloaded learning screen.',
+        [
+            ['href' => 'learn.php', 'kicker' => 'E02-E06', 'title' => 'Learning Hub', 'copy' => 'Browse courses and modules, then launch focused module reading.', 'active' => $active === 'learn'],
+            ['href' => 'module.php', 'kicker' => 'Reader', 'title' => 'Module View', 'copy' => 'Read the selected module in a distraction-light page.', 'active' => $active === 'module'],
+            ['href' => 'challenges.php', 'kicker' => 'E07-E08', 'title' => 'Challenge Arena', 'copy' => 'Challenge participation and execution feedback live here.', 'active' => $active === 'challenges'],
+            ['href' => 'leaderboard.php', 'kicker' => 'D03', 'title' => 'Leaderboard', 'copy' => 'Ranking visibility is separated from active study and challenge work.', 'active' => $active === 'leaderboard'],
+            ['href' => 'faq.php', 'kicker' => 'E11', 'title' => 'Help Center', 'copy' => 'FAQ and support guidance sit in their own reference page.', 'active' => $active === 'faq'],
+        ]
+    );
+}
+
+function renderWalletRail(string $active): void
+{
+    renderInterfaceRail(
+        'Wallet Interfaces',
+        'Spend and Earn Separately',
+        'Token purchase and creator earnings have distinct pages so transaction intent stays clear.',
+        [
+            ['href' => 'topup.php', 'kicker' => 'F01-F02', 'title' => 'Top Up Center', 'copy' => 'Browse packages, purchase KodeBits, and review wallet history.', 'active' => $active === 'topup'],
+            ['href' => 'finance.php', 'kicker' => 'F03-F04', 'title' => 'Earnings Center', 'copy' => 'Review creator earnings and request payouts in a separate interface.', 'active' => $active === 'finance'],
+        ]
+    );
+}
+
+function renderWorkspaceAreasRail(string $active): void
+{
+    renderInterfaceRail(
+        'Workspace Areas',
+        'Operational Areas',
+        'The logged-in product is split by job-to-be-done so learners, creators, and moderators do not share one crowded page.',
+        [
+            ['href' => 'home.php', 'kicker' => 'E01', 'title' => 'Homepage', 'copy' => 'See your current state, metrics, and cross-product shortcuts.', 'active' => $active === 'home'],
+            ['href' => 'profile.php', 'kicker' => 'A05-A10', 'title' => 'Account Center', 'copy' => 'Manage profile, requests, credentials, and sensitive account actions.', 'active' => $active === 'profile'],
+            ['href' => 'creator.php', 'kicker' => 'B + C', 'title' => 'Creator Workspace', 'copy' => 'Author courses, modules, and challenges in a dedicated operational page.', 'active' => $active === 'creator'],
+            ['href' => 'rewards.php', 'kicker' => 'D', 'title' => 'Rewards Center', 'copy' => 'Handle presets, gamified activity setup, and weekly challenge flows.', 'active' => $active === 'rewards'],
+            ['href' => 'governance.php', 'kicker' => 'G', 'title' => 'Governance Center', 'copy' => 'Moderation, review queues, and admin lifecycle tools stay together.', 'active' => $active === 'governance'],
+        ]
+    );
+}
+
 function renderWorkspaceFooter(): void
 {
     echo '<section class="shell response-console developer-console">';

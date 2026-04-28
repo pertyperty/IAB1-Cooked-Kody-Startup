@@ -105,12 +105,12 @@ function learnerPlus(): array
 
 function contributorPlus(): array
 {
-    return [ROLE_CONTRIBUTOR, ROLE_INSTRUCTOR, ROLE_ADMIN];
+    return [ROLE_CONTRIBUTOR, ROLE_INSTRUCTOR, ROLE_MODERATOR, ROLE_ADMIN];
 }
 
 function instructorPlus(): array
 {
-    return [ROLE_INSTRUCTOR, ROLE_ADMIN];
+    return [ROLE_INSTRUCTOR, ROLE_MODERATOR, ROLE_ADMIN];
 }
 
 function moderatorPlus(): array
@@ -903,7 +903,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'create_course') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['title']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -927,7 +927,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'edit_course') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['course_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -970,7 +970,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'archive_course') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['course_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -991,7 +991,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'delete_course') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['course_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1021,7 +1021,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'create_module') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['title']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1046,7 +1046,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'edit_module') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['module_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1104,7 +1104,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'archive_module') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['module_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1125,7 +1125,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'delete_module') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['module_id']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1152,7 +1152,7 @@ function handleContent(PDO $pdo, string $action, array $input, array $auth): voi
     }
 
     if ($action === 'assign_module') {
-        requireRoles($auth, contributorPlus());
+        requireRoles($auth, instructorPlus());
         $missing = requiredFields($input, ['course_id', 'module_id', 'sequence_no']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
@@ -1635,6 +1635,22 @@ function handleGamification(PDO $pdo, string $action, array $input, array $auth)
             JOIN code_challenges cc ON cc.id = wc.challenge_id
             ORDER BY wc.id DESC')->fetchAll();
         jsonResponse(true, 'Weekly challenge queue loaded.', ['rows' => $rows]);
+    }
+
+    if ($action === 'weekly_leaderboard') {
+        requireRoles($auth, learnerPlus());
+
+        $rows = $pdo->query('SELECT wr.weekly_challenge_id, wc.weekly_code, wc.challenge_id, cc.title AS challenge_title,
+            wr.user_id, u.full_name, wr.best_submission_id, wr.final_score, wr.rank_position, wr.created_at
+            FROM weekly_results wr
+            JOIN weekly_challenges wc ON wc.id = wr.weekly_challenge_id
+            JOIN code_challenges cc ON cc.id = wc.challenge_id
+            JOIN users u ON u.id = wr.user_id
+            WHERE wc.status IN ("Active", "Published", "Closed")
+            ORDER BY wc.id DESC, wr.rank_position ASC, wr.final_score DESC
+            LIMIT 120')->fetchAll();
+
+        jsonResponse(true, 'Weekly leaderboard loaded.', ['rows' => $rows]);
     }
 
     if ($action === 'create_activity') {
@@ -2127,10 +2143,29 @@ function handleFinance(PDO $pdo, string $action, array $input, array $auth): voi
 
     if ($action === 'purchase') {
         requireRoles($auth, learnerPlus());
-        $missing = requiredFields($input, ['package_id']);
+        $missing = requiredFields($input, ['package_id', 'payment_channel', 'account_name', 'account_no']);
         if ($missing !== null) {
             jsonResponse(false, 'Missing field.', ['field' => $missing], 422);
         }
+
+        $paymentChannel = trim((string) ($input['payment_channel'] ?? ''));
+        $allowedChannels = ['Maya', 'GCash', 'Bank'];
+        if (!in_array($paymentChannel, $allowedChannels, true)) {
+            jsonResponse(false, 'Invalid payment channel.', ['allowed_channels' => $allowedChannels], 422);
+        }
+
+        $accountName = trim((string) ($input['account_name'] ?? ''));
+        $accountNoRaw = preg_replace('/\s+/', '', (string) ($input['account_no'] ?? ''));
+        if ($accountName === '' || $accountNoRaw === '') {
+            jsonResponse(false, 'Payment account details are required.', [], 422);
+        }
+
+        $accountNo = preg_replace('/[^A-Za-z0-9]/', '', $accountNoRaw);
+        if (strlen($accountNo) < 6) {
+            jsonResponse(false, 'Payment account number is too short.', [], 422);
+        }
+
+        $maskedAccount = str_repeat('*', max(0, strlen($accountNo) - 4)) . substr($accountNo, -4);
 
         $packageStmt = $pdo->prepare('SELECT id, package_name, php_amount, kodebits_amount FROM token_packages WHERE id = :id AND is_active = 1 LIMIT 1');
         $packageStmt->execute(['id' => (int) $input['package_id']]);
@@ -2154,7 +2189,13 @@ function handleFinance(PDO $pdo, string $action, array $input, array $auth): voi
             'php_amount' => (float) $package['php_amount'],
             'payment_status' => 'success',
             'provider_name' => 'xendit-sandbox-sim',
-            'provider_payload' => json_encode(['status' => 'simulated'], JSON_UNESCAPED_SLASHES),
+            'provider_payload' => json_encode([
+                'status' => 'simulated',
+                'channel' => $paymentChannel,
+                'account_name' => $accountName,
+                'account_no_masked' => $maskedAccount,
+                'xendit_reference' => trim((string) ($input['xendit_reference'] ?? '')),
+            ], JSON_UNESCAPED_SLASHES),
             'created_at' => nowUtc(),
             'updated_at' => nowUtc(),
         ]);
@@ -2178,13 +2219,19 @@ function handleFinance(PDO $pdo, string $action, array $input, array $auth): voi
             'created_at' => nowUtc(),
         ]);
 
-        createNotification($pdo, $auth['id'], 'email', 'Token purchase successful', 'Payment reference: ' . $paymentRef, 'sent');
-        writeAudit($pdo, $auth['id'], 'purchase_tokens', 'payment_transactions', $paymentRef, null, ['kodebits' => (int) $package['kodebits_amount']]);
+        createNotification($pdo, $auth['id'], 'email', 'Token purchase successful', 'Payment reference: ' . $paymentRef . ' via ' . $paymentChannel, 'sent');
+        writeAudit($pdo, $auth['id'], 'purchase_tokens', 'payment_transactions', $paymentRef, null, [
+            'kodebits' => (int) $package['kodebits_amount'],
+            'payment_channel' => $paymentChannel,
+            'account_no_masked' => $maskedAccount,
+        ]);
 
         $pdo->commit();
         jsonResponse(true, 'Token purchase successful.', [
             'payment_ref' => $paymentRef,
             'credited_kodebits' => (int) $package['kodebits_amount'],
+            'payment_channel' => $paymentChannel,
+            'account_no_masked' => $maskedAccount,
         ]);
     }
 

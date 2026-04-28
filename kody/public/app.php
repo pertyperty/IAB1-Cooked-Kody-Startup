@@ -17,6 +17,7 @@ renderPublicNav('home');
 		<p>Use Login for returning users, Register for new users, and Homepage for authenticated workspace flows.</p>
 	</div>
 </header>
+<?php renderAuthFlowRail('index'); ?>
 
 <main class="shell auth-layout">
 	<section class="surface auth-surface">

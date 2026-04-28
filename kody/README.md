@@ -5,6 +5,8 @@ Kody is now structured as a multi-page working website for the SRS instead of a 
 The current build provides:
 
 - dedicated pages for login, registration, verification, recovery, homepage, profile, learning, creator work, rewards, finance, and governance
+- interface rails that group related public, learning, wallet, and workspace pages so the separated website structure is visible from inside each area
+- a simplified public gateway page that routes users into dedicated interfaces instead of embedding login and registration on the same entry screen
 - working local authentication, session-token usage, and lockout behavior
 - role-based page visibility for learner, contributor, instructor, moderator, and administrator
 - working local flows for the SRS use cases across modules A-G
@@ -122,8 +124,20 @@ Open:
 - The website is intended to show working end-to-end behavior using the local database and simulated provider states.
 - `IMPLEMENTATION.md` is the active iteration tracker and should be updated every pass.
 
+## System Audit Snapshot
+
+This pass confirms that the system is functionally broad and much clearer at the page level, but it still has several architectural hardening gaps:
+
+- `api/index.php` remains a large monolithic router and would benefit from module-level extraction.
+- Write actions still need CSRF protection.
+- The API still sends `Access-Control-Allow-Origin: *`, which is too permissive for a hardened deployment.
+- Auth bootstrapping still depends on client-side stored session state, which limits true server-side page guarding.
+- Scenario-based regression checks for the role matrix and high-risk workflows are still missing.
+
 ## Recommended Next Steps
 
 1. Add CSRF protection across write operations.
-2. Tighten session control strategy and add optional server-side page guards for authenticated pages.
-3. Add scenario-based testing for the role matrix and the 61 use cases.
+2. Replace the wildcard CORS policy with an environment-specific allowlist.
+3. Split `api/index.php` into module handlers or controllers for safer maintenance.
+4. Tighten session control strategy and add optional server-side page guards for authenticated pages.
+5. Add scenario-based testing for the role matrix and the 61 use cases.

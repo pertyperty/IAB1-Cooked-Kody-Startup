@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/site.php';
 renderHead('Kody Governance', 'workspace-page', ['data-page' => 'governance']);
 renderWorkspaceNav('governance', 'Governance and Administration', 'Moderators and administrators use this page for reports, reviews, user management, presets, and FAQ lifecycle operations.');
 renderWorkspaceIntro('G. Administration and Governance', 'Governance Center', 'Moderation and administration are separated from learning and authoring pages.');
+renderWorkspaceAreasRail('governance');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">

@@ -16,6 +16,7 @@ renderPublicNav('recover');
         <p>Administrator accounts are excluded from self-service recovery in the current ruleset.</p>
     </div>
 </header>
+<?php renderAuthFlowRail('recover'); ?>
 
 <main class="shell auth-layout">
     <section class="surface auth-surface">

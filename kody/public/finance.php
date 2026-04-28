@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/site.php';
 renderHead('Kody Finance', 'workspace-page', ['data-page' => 'finance']);
 renderWorkspaceNav('finance', 'Earnings and Payouts', 'Creator earnings and payout requests are handled in this dedicated page. Token top-up is managed in the Top Up page.');
 renderWorkspaceIntro('F03 + F04. Creator Earnings and Payouts', 'Earnings Center', 'This page is focused on earnings and payout workflows only.');
+renderWalletRail('finance');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">

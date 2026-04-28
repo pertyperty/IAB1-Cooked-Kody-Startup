@@ -1,6 +1,6 @@
 # Kody Implementation Tracker
 
-Last updated: 2026-04-26
+Last updated: 2026-04-27
 
 This file tracks the current state of the Kody website and must be updated every iteration together with `README.md`.
 
@@ -12,12 +12,26 @@ This file tracks the current state of the Kody website and must be updated every
 
 ## Current Iteration Goal
 
-Complete the unfinished functional entries after multi-page conversion by adding direct row-level operations, richer page-to-page workflow navigation, and stricter backend validation.
+Audit the multi-page system, clean up interface boundaries, and make the separated webpage structure more explicit inside the product.
 
 ## Completed In This Iteration
 
+- Audited the system structure and documented the main hardening gaps:
+  - missing CSRF protection
+  - wildcard CORS policy
+  - monolithic API router
+  - client-side auth bootstrap limiting server-side guards
+  - missing scenario-based regression coverage
+- Simplified `public/index.php` into a real gateway page that routes users into dedicated auth/workspace pages instead of embedding multiple public forms together.
+- Added reusable interface rails in `public/includes/site.php` for:
+  - public authentication pages
+  - learning pages
+  - wallet/finance pages
+  - major workspace operational areas
+- Applied the shared interface rails across the public and authenticated page set for cleaner separation and page-to-page wayfinding.
+
 - Split public authentication into dedicated pages:
-  - `index.php` (auth-first gateway with login and registration forms)
+  - `index.php` (auth-first gateway with routing into dedicated public pages)
   - `login.php`
   - `register.php`
   - `verify.php`
@@ -102,6 +116,7 @@ Complete the unfinished functional entries after multi-page conversion by adding
 ## Phase 5. Security and Reliability Hardening (In Progress)
 
 - password hashing upgrade completed with backward compatibility
+- system audit completed and documented
 - add CSRF protection
 - add stricter validation and error handling
 - review and tighten session safety
@@ -199,5 +214,7 @@ Complete the unfinished functional entries after multi-page conversion by adding
 ## Immediate Next Slice
 
 1. Add CSRF protection across public and authenticated write operations.
-2. Tighten session-control posture (rotation cadence, client storage strategy, and optional server-side page guards).
-3. Add scenario-based verification scripts for role matrix and high-risk use cases.
+2. Replace `Access-Control-Allow-Origin: *` with environment-driven allowlisted origins.
+3. Split the API router into module files or controllers.
+4. Tighten session-control posture (rotation cadence, client storage strategy, and optional server-side page guards).
+5. Add scenario-based verification scripts for role matrix and high-risk use cases.

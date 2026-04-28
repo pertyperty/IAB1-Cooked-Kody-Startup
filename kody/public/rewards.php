@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/site.php';
 
 renderHead('Kody Rewards and Rankings', 'workspace-page', ['data-page' => 'rewards']);
-renderWorkspaceNav('rewards', 'Rewards and Rankings', 'Gamification, ranking, preset activity creation, and weekly challenge operations are separated into their own page.');
+renderWorkspaceNav('rewards', 'Rewards and Rankings', 'Gamification ranking, rewards visibility, and weekly challenge publishing are separated into their own page.');
 renderWorkspaceIntro('D. Gamification and Rewards System', 'Gamification Center', 'This page shows the reward and ranking side of the platform as its own product area.');
+renderWorkspaceAreasRail('rewards');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
@@ -23,21 +24,13 @@ renderWorkspaceIntro('D. Gamification and Rewards System', 'Gamification Center'
             </article>
 
             <article class="surface inset-surface">
-                <details class="advanced-drawer" open>
-                    <summary>Create Activity from Selected Preset</summary>
-                    <form class="stack-form api-form" data-module="gamification" data-action="create_activity" data-roles="contributor,instructor,administrator">
-                        <h3>UC D01 Create Gamified Activity From Preset</h3>
-                        <input name="preset_id" type="number" min="1" placeholder="Preset ID" required>
-                        <input name="activity_name" placeholder="Activity name" required>
-                        <select name="target_type">
-                            <option value="course">course</option>
-                            <option value="module">module</option>
-                            <option value="challenge">challenge</option>
-                        </select>
-                        <input name="target_id" type="number" min="1" placeholder="Target ID" required>
-                        <button type="submit">Create Activity</button>
-                    </form>
-                </details>
+                <article class="catalog-card">
+                    <h3>Game Activity Creation Moved</h3>
+                    <p>Create game activity from preset is now embedded inside the Creator module/challenge management interface.</p>
+                    <div class="inline-actions">
+                        <a class="button-link" href="creator.php">Open Creator Workspace</a>
+                    </div>
+                </article>
 
                 <details class="advanced-drawer">
                     <summary>Advanced Reward Granting</summary>
@@ -77,7 +70,7 @@ renderWorkspaceIntro('D. Gamification and Rewards System', 'Gamification Center'
 
                 <article class="catalog-card">
                     <h3>Ranking Engine Interface</h3>
-                    <p>The page presents ranking and weekly-result operations as if the live gamification service is already integrated.</p>
+                    <p>The page is focused on rankings, weekly publish flow, and reward operations after results are available.</p>
                 </article>
             </article>
         </div>

@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/site.php';
 renderHead('Kody Module Content', 'workspace-page', ['data-page' => 'module']);
 renderWorkspaceNav('learn', 'Module Content', 'This page displays the selected module after enroll or direct module access actions.');
 renderWorkspaceIntro('E05 + E06. Module Access', 'Focused Module View', 'Use this page to read module content after access checks and enrollment rules are applied.');
+renderLearningRail('module');
 ?>
 <main class="shell workspace-stack">
     <section class="workspace-section">
