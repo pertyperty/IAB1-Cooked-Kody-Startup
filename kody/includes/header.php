@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/auth.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -27,31 +28,37 @@ $currentScript = basename($_SERVER['PHP_SELF'] ?? '');
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
 <header class="site-header">
-    <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-        <div style="display:flex;align-items:center;gap:1rem;">
-            <a href="<?php echo $basePath; ?>/index.php" style="text-decoration:none;color:inherit;"><h1>Kody</h1></a>
-            <?php if ($isUserAdmin && strpos($currentPath, '/admin/') !== false): ?>
-                <div style="font-size:0.95rem;color:var(--muted);">Admin Panel — <?php echo htmlspecialchars($currentScript); ?></div>
+    <div class="container header-shell">
+        <div class="header-meta">
+            <div class="header-brand">
+                <a href="<?php echo $basePath; ?>/index.php" class="site-title">Kody</a>
+                <?php if ($isUserAdmin && strpos($currentPath, '/admin/') !== false): ?>
+                    <div class="muted small">Admin Panel — <?php echo htmlspecialchars($currentScript); ?></div>
+                <?php endif; ?>
+            </div>
+            <?php if ($isLoggedIn): ?>
+                <div class="header-actions" aria-label="Quick shortcuts">
+                    <a class="btn btn-primary" href="<?php echo $basePath; ?>/dashboard.php">Dashboard</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/course.php">Courses</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/enroll.php">Enroll</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/submit_code.php">Submit Code</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/progress.php">Progress</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
+                </div>
             <?php endif; ?>
         </div>
 
-        <nav aria-label="Main navigation">
+        <nav class="site-nav" aria-label="Main navigation">
             <?php if ($isLoggedIn): ?>
-                <a href="<?php echo $basePath; ?>/dashboard.php">Dashboard</a>
-                <a href="<?php echo $basePath; ?>/course.php">Courses</a>
-                <a href="<?php echo $basePath; ?>/enroll.php">Enroll</a>
-                <a href="<?php echo $basePath; ?>/progress.php">Progress</a>
-                <a href="<?php echo $basePath; ?>/submit_code.php">Submit Code</a>
-                <a href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
-                <a href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
                 <?php if ($isUserAdmin): ?>
-                    <a href="<?php echo $basePath; ?>/admin/users_crud.php">Admin Panel</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/admin/users_crud.php">Admin Panel</a>
                 <?php endif; ?>
-                <span style="margin-left:0.75rem;color:var(--muted);">Hello, <?php echo htmlspecialchars($_SESSION['first_name'] ?? 'User'); ?></span>
-                <a href="<?php echo $basePath; ?>/logout.php">Logout</a>
+                <span class="muted ml-075">Hello, <?php echo htmlspecialchars($_SESSION['first_name'] ?? 'User'); ?></span>
+                <a class="btn btn-ghost" href="<?php echo $basePath; ?>/logout.php">Logout</a>
             <?php else: ?>
-                <a href="<?php echo $basePath; ?>/login.php">Login</a>
-                <a href="<?php echo $basePath; ?>/register.php">Register</a>
+                <a class="btn btn-ghost" href="<?php echo $basePath; ?>/login.php">Login</a>
+                <a class="btn btn-ghost" href="<?php echo $basePath; ?>/register.php">Register</a>
             <?php endif; ?>
         </nav>
     </div>

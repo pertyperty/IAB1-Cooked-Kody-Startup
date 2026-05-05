@@ -29,7 +29,7 @@ echo '<aside class="admin-sidebar">';
 echo '<h3>Admin</h3>';
 $modules = getCrudModuleTableMap();
 foreach ($modules as $mod => $tbl) {
-    $active = $mod === $crud_module ? ' style="font-weight:700;"' : '';
+    $active = $mod === $crud_module ? ' class="fw-700"' : '';
     echo '<a href="' . '../admin/' . htmlspecialchars($mod) . '"' . $active . '>' . htmlspecialchars(ucwords(str_replace(['_','-','crud.php'], [' ',' ',''], $mod))) . '</a>';
 }
 echo '</aside>';
@@ -41,6 +41,7 @@ echo '<section><h3>Create</h3>';
 echo '<form method="post" action="../actions/create.php" enctype="multipart/form-data">';
 echo '<input type="hidden" name="module" value="' . htmlspecialchars($crud_module) . '">';
 echo '<input type="hidden" name="table" value="' . htmlspecialchars($table) . '">';
+echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(getCsrfToken()) . '">';
 echo '<div class="form-grid">';
 
 foreach ($definition['columns'] as $col) {
@@ -92,9 +93,9 @@ if (empty($rows)) {
     echo '<p>No records found.</p>';
 } else {
     // search form
-    echo '<form method="get" action="' . htmlspecialchars(basename(__FILE__)) . '" style="margin-bottom:8px;" role="search" aria-label="Search records">';
+    echo '<form method="get" action="' . htmlspecialchars(basename($_SERVER['PHP_SELF'] ?? '')) . '" class="mb-008" role="search" aria-label="Search records">';
     echo '<input type="hidden" name="module" value="' . htmlspecialchars($crud_module) . '">';
-    echo '<input type="text" name="q" placeholder="Search..." value="' . htmlspecialchars($q) . '" aria-label="Search records" style="margin-right:6px;">';
+    echo '<input type="text" name="q" placeholder="Search..." value="' . htmlspecialchars($q) . '" aria-label="Search records" class="mr-06">';
     echo '<button type="submit" aria-label="Submit search">Search</button>';
     echo '</form>';
 
@@ -130,13 +131,14 @@ if (empty($rows)) {
 
         // Actions: Edit page link and Delete form
         echo '<td class="actions">';
-        echo '<a class="btn-secondary" href="../admin/edit.php?module=' . urlencode($crud_module) . '&id=' . urlencode($row[$pk]) . '" style="margin-right:6px;">Edit</a>';
+        echo '<a class="btn-secondary mr-06" href="../admin/edit.php?module=' . urlencode($crud_module) . '&id=' . urlencode($row[$pk]) . '">Edit</a>';
 
         // Delete form
-        echo '<form method="post" action="../actions/delete.php" style="display:inline-block;">';
+        echo '<form method="post" action="../actions/delete.php" class="inline-block">';
         echo '<input type="hidden" name="module" value="' . htmlspecialchars($crud_module) . '">';
         echo '<input type="hidden" name="table" value="' . htmlspecialchars($table) . '">';
         echo '<input type="hidden" name="id" value="' . htmlspecialchars($row[$pk]) . '">';
+        echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(getCsrfToken()) . '">';
         echo '<button type="submit" onclick="return confirm(\'Delete this record?\')">Delete</button>';
         echo '</form>';
 

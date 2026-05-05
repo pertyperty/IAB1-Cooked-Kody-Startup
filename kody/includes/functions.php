@@ -776,6 +776,20 @@ function getCrudFlashMessage()
     return $flash;
 }
 
+function getCsrfToken()
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken($token)
+{
+    return !empty($_SESSION['csrf_token']) && is_string($token) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 function getCrudRedirectTarget($table = null, $module = null)
 {
     $moduleName = !empty($module) ? basename($module) : null;
@@ -1036,7 +1050,7 @@ function renderCrudField($table, $column, $value = null)
         $preview = '';
         if (!empty($value)) {
             $imgPath = '/kody/assets/uploads/' . ltrim($value, '/');
-            $preview = '<div class="img-preview"><img src="' . htmlspecialchars($imgPath) . '" alt="' . htmlspecialchars($column) . '" style="max-width:120px;display:block;margin-bottom:6px;"/></div>';
+            $preview = '<div class="img-preview"><img class="preview-img" src="' . htmlspecialchars($imgPath) . '" alt="' . htmlspecialchars($column) . '"/></div>';
         }
         $html .= '<label>' . htmlspecialchars($column) . $preview . '<input type="file" accept="image/*" name="' . htmlspecialchars($column) . '"></label>';
         return $html;

@@ -52,11 +52,16 @@ if (!$row) {
                 <input type="hidden" name="module" value="<?php echo htmlspecialchars($crud_module); ?>">
                 <input type="hidden" name="table" value="<?php echo htmlspecialchars($table); ?>">
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($row[$pk]); ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
 
                 <div class="form-grid">
                     <?php
                     foreach ($definition['columns'] as $col) {
                         if ($col === $pk) continue;
+                        if ($table === 'users' && $col === 'password_hash') {
+                            echo '<label>Password<input type="password" name="password_hash" placeholder="Leave blank to keep current password"></label>';
+                            continue;
+                        }
                         echo renderCrudField($table, $col, $row[$col] ?? null);
                     }
                     ?>

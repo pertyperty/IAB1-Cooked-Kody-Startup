@@ -62,56 +62,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once __DIR__ . '/includes/header.php';
 ?>
-<h2>Payment</h2>
-<p class="notice">Simulate payment and subscription activation.</p>
+<div class="page-hero">
+	<h2>Payment Checkout</h2>
+	<p>Confirm your subscription top-up with a payment method and activate it immediately.</p>
+</div>
 
 <?php if ($message !== ''): ?>
 	<p class="<?php echo htmlspecialchars($messageType); ?>"><?php echo htmlspecialchars($message); ?></p>
 <?php endif; ?>
 
-<?php if (!$selectedPlan): ?>
-	<p>Please choose a plan from <a href="/kody/subscription.php">Subscription Page</a>.</p>
-<?php else: ?>
-	<h3>Selected Plan</h3>
-	<ul>
-		<li>Plan ID: <?php echo (int) $selectedPlan['plan_id']; ?></li>
-		<li>Plan Name: <?php echo htmlspecialchars($selectedPlan['plan_name']); ?></li>
-		<li>Price: <?php echo htmlspecialchars((string) $selectedPlan['price']); ?></li>
-		<li>Billing Cycle: <?php echo htmlspecialchars($selectedPlan['billing_cycle']); ?></li>
-	</ul>
+<section class="split-layout">
+	<div class="topup-panel">
+		<div class="section-heading">
+			<h3>Selected Plan</h3>
+			<?php if ($selectedPlan): ?>
+				<span class="badge success">Ready</span>
+			<?php endif; ?>
+		</div>
 
-	<form method="post" action="/kody/payment.php?plan_id=<?php echo (int) $selectedPlan['plan_id']; ?>">
-		<input type="hidden" name="plan_id" value="<?php echo (int) $selectedPlan['plan_id']; ?>">
+		<?php if (!$selectedPlan): ?>
+			<p>Please choose a plan from <a href="/kody/subscription.php">Subscription Page</a>.</p>
+		<?php else: ?>
+			<div class="timeline mt-075">
+				<div class="timeline-item"><strong>Plan ID:</strong> <?php echo (int) $selectedPlan['plan_id']; ?></div>
+				<div class="timeline-item"><strong>Plan Name:</strong> <?php echo htmlspecialchars($selectedPlan['plan_name']); ?></div>
+				<div class="timeline-item"><strong>Price:</strong> $<?php echo htmlspecialchars((string) $selectedPlan['price']); ?></div>
+				<div class="timeline-item"><strong>Billing Cycle:</strong> <?php echo htmlspecialchars($selectedPlan['billing_cycle']); ?></div>
+			</div>
 
-		<label for="payment_method">Payment Method</label><br>
-		<select id="payment_method" name="payment_method" required>
-			<option value="">Select payment method</option>
-			<option value="gcash">GCash</option>
-			<option value="maya">Maya</option>
-			<option value="card">Card</option>
-			<option value="bank_transfer">Bank Transfer</option>
-		</select><br><br>
+			<div class="page-actions mt-1">
+				<a class="button-link" href="/kody/subscription.php">Back to plans</a>
+			</div>
+		<?php endif; ?>
+	</div>
 
-		<button type="submit">Pay and Activate</button>
-	</form>
-<?php endif; ?>
+	<div class="topup-panel">
+		<div class="section-heading">
+			<h3>Payment Method</h3>
+			<span class="badge info">Checkout</span>
+		</div>
+
+		<?php if ($selectedPlan): ?>
+			<form method="post" action="/kody/payment.php?plan_id=<?php echo (int) $selectedPlan['plan_id']; ?>" class="mt-075">
+				<input type="hidden" name="plan_id" value="<?php echo (int) $selectedPlan['plan_id']; ?>">
+
+				<label for="payment_method">Choose a method</label>
+				<select id="payment_method" name="payment_method" required>
+					<option value="">Select payment method</option>
+					<option value="gcash">GCash</option>
+					<option value="maya">Maya</option>
+					<option value="card">Card</option>
+					<option value="bank_transfer">Bank Transfer</option>
+				</select>
+
+				<div class="timeline mt-1">
+					<div class="timeline-item">The subscription record is updated immediately after payment.</div>
+					<div class="timeline-item">A completed payment row is written to the payments table.</div>
+				</div>
+
+				<div class="page-actions mt-1">
+					<button type="submit" class="primary">Pay and Activate</button>
+				</div>
+			</form>
+		<?php else: ?>
+			<p class="meta">Choose a plan first to enable checkout.</p>
+		<?php endif; ?>
+	</div>
+</section>
 
 <?php if (!empty($result)): ?>
-	<h3>Payment Result Summary</h3>
-	<ul>
-		<li>Payment ID: <?php echo (int) $result['payment_id']; ?></li>
-		<li>Payment Method: <?php echo htmlspecialchars($result['payment_method']); ?></li>
-		<li>Payment Status: <?php echo htmlspecialchars($result['payment_status']); ?></li>
-		<li>Subscription ID: <?php echo (int) $result['subscription_id']; ?></li>
-		<li>Subscription Status: <?php echo htmlspecialchars($result['subscription_status']); ?></li>
-		<li>Plan: <?php echo htmlspecialchars($result['plan_name']); ?></li>
-		<li>Amount: <?php echo htmlspecialchars((string) $result['plan_price']); ?></li>
-		<li>Billing Cycle: <?php echo htmlspecialchars($result['billing_cycle']); ?></li>
-		<li>Start Date: <?php echo htmlspecialchars($result['start_date']); ?></li>
-		<li>End Date: <?php echo htmlspecialchars($result['end_date']); ?></li>
-	</ul>
+	<section class="mt-1">
+		<div class="section-heading">
+			<h3>Payment Result Summary</h3>
+			<span class="badge success">Completed</span>
+		</div>
+		<div class="timeline mt-075">
+			<div class="timeline-item"><strong>Payment ID:</strong> <?php echo (int) $result['payment_id']; ?></div>
+			<div class="timeline-item"><strong>Method:</strong> <?php echo htmlspecialchars($result['payment_method']); ?></div>
+			<div class="timeline-item"><strong>Status:</strong> <?php echo htmlspecialchars($result['payment_status']); ?></div>
+			<div class="timeline-item"><strong>Subscription ID:</strong> <?php echo (int) $result['subscription_id']; ?></div>
+			<div class="timeline-item"><strong>Subscription Status:</strong> <?php echo htmlspecialchars($result['subscription_status']); ?></div>
+			<div class="timeline-item"><strong>Plan:</strong> <?php echo htmlspecialchars($result['plan_name']); ?> · $<?php echo htmlspecialchars((string) $result['plan_price']); ?></div>
+			<div class="timeline-item"><strong>Period:</strong> <?php echo htmlspecialchars($result['start_date']); ?> to <?php echo htmlspecialchars($result['end_date']); ?></div>
+		</div>
+	</section>
 <?php endif; ?>
 
-<p><a href="/kody/subscription.php">Back to Subscription</a></p>
+<p class="mt-1"><a class="button-link" href="/kody/subscription.php">Back to Subscription</a></p>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
 

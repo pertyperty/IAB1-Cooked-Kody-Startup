@@ -8,6 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Invalid request method.');
 }
 
+if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+    setCrudFlashMessage('error', 'Security check failed. Please try again.');
+    header('Location: ' . getCrudRedirectTarget(null, $_POST['module'] ?? null));
+    exit;
+}
+
 $table = resolveCrudTableName($_POST['table'] ?? null, $_POST['module'] ?? null);
 
 if (!$table) {

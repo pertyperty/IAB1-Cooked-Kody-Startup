@@ -8,6 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Invalid request method.');
 }
 
+if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+    setCrudFlashMessage('error', 'Security check failed. Please try again.');
+    header('Location: ' . getCrudRedirectTarget(null, $_POST['module'] ?? null));
+    exit;
+}
+
 $table = resolveCrudTableName($_POST['table'] ?? null, $_POST['module'] ?? null);
 
 if (!$table) {
@@ -23,6 +29,11 @@ if (!is_dir($uploadDir)) {
 
 // Handle file uploads (profile pictures etc.) with server-side checks
 $maxSize = 2 * 1024 * 1024; // 2MB
+$mimeToExt = [
+    'image/jpeg' => 'jpg',
+    'image/png' => 'png',
+    'image/gif' => 'gif',
+];
 foreach ($_FILES as $field => $fileinfo) {
     if (empty($fileinfo['name'])) continue;
     if ($fileinfo['error'] !== UPLOAD_ERR_OK) continue;
@@ -33,15 +44,19 @@ foreach ($_FILES as $field => $fileinfo) {
         exit;
     }
 
-    $allowed = ['image/jpeg','image/png','image/gif'];
-    if (!in_array($fileinfo['type'], $allowed, true)) {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $detectedMime = $finfo ? finfo_file($finfo, $fileinfo['tmp_name']) : null;
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+
+    if (empty($detectedMime) || !isset($mimeToExt[$detectedMime])) {
         setCrudFlashMessage('error', 'Invalid file type for ' . $field . '.');
         header('Location: ' . getCrudRedirectTarget($table, $_POST['module'] ?? null));
         exit;
     }
 
-    $ext = pathinfo($fileinfo['name'], PATHINFO_EXTENSION);
-    $safeName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $safeName = bin2hex(random_bytes(16)) . '.' . $mimeToExt[$detectedMime];
     $dest = $uploadDir . $safeName;
 
     if (@move_uploaded_file($fileinfo['tmp_name'], $dest)) {
