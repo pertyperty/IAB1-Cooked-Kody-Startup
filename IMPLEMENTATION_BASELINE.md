@@ -364,16 +364,16 @@ Follow the phases in order. Keep each phase small and test before moving on.
   - [DONE] Added `getUserLatestSubscription()`.
   - [DONE] Added `createPaymentRecord()`.
 - Segment 6: Quick verification pass
-  - [TODO] Browser test plan list renders from DB seed data.
-  - [TODO] Browser test payment creates a new `payments` row.
-  - [TODO] Browser test subscription row is created/updated correctly.
+  - [DONE] Browser test plan list renders from DB seed data.
+  - [DONE] Browser test payment creates a new `payments` row.
+  - [DONE] Browser test subscription row is created/updated correctly.
 
 ### Phase 6 Progress Indicators
 
-- Completion: **90%**
-- Done now: subscription/payment simulation is implemented and DB-connected
-- Remaining: browser verification and minor UX polish (if needed)
-- Next prompt should do: run Phase 6 test checklist and close to 100%
+- Completion: **100%**
+- Done now: subscription/payment simulation is implemented, verified, and DB-connected
+- Remaining: none
+- Next prompt should do: start Phase 7 (Generic CRUD Actions)
 
 ### Tasks
 
@@ -388,6 +388,39 @@ Follow the phases in order. Keep each phase small and test before moving on.
 - Basic monetization simulation works.
 
 ## Phase 7 - Generic CRUD Actions
+
+<!-- PHASE 7 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
+
+### Phase 7 Segments and Progress
+
+- Segment 1: Create action (`actions/create.php`)
+  - [DONE] Insert a record using a prepared statement.
+  - [DONE] Accept only whitelisted tables and columns.
+  - [DONE] Reject unknown fields before running SQL.
+- Segment 2: Update action (`actions/update.php`)
+  - [DONE] Update a record using the primary key.
+  - [DONE] Accept only whitelisted tables and columns.
+  - [DONE] Reject unknown fields before running SQL.
+- Segment 3: Delete action (`actions/delete.php`)
+  - [DONE] Delete a record using the primary key.
+  - [DONE] Accept only whitelisted tables.
+  - [DONE] Block raw table or column input.
+- Segment 4: Shared whitelist helpers (`includes/functions.php`)
+  - [DONE] Add reusable whitelist definitions for tables and columns.
+  - [DONE] Add centralized createRecord/updateRecord/deleteRecord helpers.
+  - [DONE] Keep CRUD SQL out of individual admin pages.
+- Segment 5: Quick verification pass
+  - [DONE] Confirm create/update/delete helpers pass PHP syntax validation.
+  - [DONE] Confirm unknown tables and fields are rejected by the whitelist layer.
+  - [DONE] Confirm admin pages can call the shared CRUD helpers.
+
+### Phase 7 Progress Indicators
+
+- Completion: **100%**
+- Done now: centralized CRUD action handling is implemented and validated
+- Remaining: none
+- Next prompt should do: start Phase 8 (Admin CRUD Pages by Group)
 
 ### Rules
 

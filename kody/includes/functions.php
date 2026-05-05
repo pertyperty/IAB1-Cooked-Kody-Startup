@@ -443,3 +443,399 @@ function createPaymentRecord($userId, $subscriptionId, $amount, $paymentMethod, 
         'payment_id' => $ok ? (int) $pdo->lastInsertId() : 0,
     ];
 }
+
+function getCrudTableDefinitions()
+{
+    return [
+        'users' => [
+            'primary_key' => 'user_id',
+            'columns' => [
+                'google_id',
+                'email',
+                'password_hash',
+                'first_name',
+                'last_name',
+                'profile_picture',
+                'account_status',
+            ],
+            'aliases' => [
+                'password' => 'password_hash',
+            ],
+            'transformers' => [
+                'password_hash' => function ($value) {
+                    return password_hash((string) $value, PASSWORD_DEFAULT);
+                },
+            ],
+        ],
+        'roles' => [
+            'primary_key' => 'role_id',
+            'columns' => ['role_name'],
+        ],
+        'user_roles' => [
+            'primary_key' => 'user_role_id',
+            'columns' => ['user_id', 'role_id', 'assigned_at'],
+        ],
+        'instructor_requests' => [
+            'primary_key' => 'request_id',
+            'columns' => ['user_id', 'request_message', 'status', 'reviewed_by', 'requested_at', 'reviewed_at'],
+        ],
+        'courses' => [
+            'primary_key' => 'course_id',
+            'columns' => ['instructor_id', 'title', 'description', 'difficulty', 'is_archived', 'created_at'],
+        ],
+        'course_enrollment' => [
+            'primary_key' => 'enrollment_id',
+            'columns' => ['user_id', 'course_id', 'enrolled_at', 'completion_status'],
+        ],
+        'modules' => [
+            'primary_key' => 'module_id',
+            'columns' => ['course_id', 'title', 'module_order', 'created_at'],
+        ],
+        'lessons' => [
+            'primary_key' => 'lesson_id',
+            'columns' => ['module_id', 'title', 'content', 'lesson_order'],
+        ],
+        'challenges' => [
+            'primary_key' => 'challenge_id',
+            'columns' => ['module_id', 'title', 'description', 'programming_language', 'difficulty', 'xp_reward', 'created_by', 'status', 'created_at'],
+        ],
+        'challenge_testcases' => [
+            'primary_key' => 'testcase_id',
+            'columns' => ['challenge_id', 'input_data', 'expected_output'],
+        ],
+        'submissions' => [
+            'primary_key' => 'submission_id',
+            'columns' => ['challenge_id', 'user_id', 'source_code', 'language', 'execution_status', 'score', 'submitted_at'],
+        ],
+        'user_progress' => [
+            'primary_key' => 'progress_id',
+            'columns' => ['user_id', 'course_id', 'module_id', 'lesson_id', 'challenge_id', 'status', 'completed_at'],
+        ],
+        'user_xp' => [
+            'primary_key' => 'xp_id',
+            'columns' => ['user_id', 'total_xp', 'level'],
+        ],
+        'leaderboard' => [
+            'primary_key' => 'leaderboard_id',
+            'columns' => ['user_id', 'rank_position'],
+        ],
+        'moderation_reviews' => [
+            'primary_key' => 'review_id',
+            'columns' => ['challenge_id', 'moderator_id', 'decision', 'review_notes', 'reviewed_at'],
+        ],
+        'subscription_plans' => [
+            'primary_key' => 'plan_id',
+            'columns' => ['plan_name', 'price', 'billing_cycle'],
+        ],
+        'user_subscriptions' => [
+            'primary_key' => 'subscription_id',
+            'columns' => ['user_id', 'plan_id', 'start_date', 'end_date', 'status'],
+        ],
+        'payments' => [
+            'primary_key' => 'payment_id',
+            'columns' => ['user_id', 'subscription_id', 'amount', 'payment_method', 'payment_status', 'paid_at'],
+        ],
+        'notifications' => [
+            'primary_key' => 'notification_id',
+            'columns' => ['user_id', 'message', 'is_read', 'created_at'],
+        ],
+    ];
+}
+
+function getCrudModuleTableMap()
+{
+    return [
+        'users_crud.php' => 'users',
+        'roles_crud.php' => 'roles',
+        'user_roles_crud.php' => 'user_roles',
+        'instructor_requests_crud.php' => 'instructor_requests',
+        'courses_crud.php' => 'courses',
+        'modules_crud.php' => 'modules',
+        'lessons_crud.php' => 'lessons',
+        'challenges_crud.php' => 'challenges',
+        'testcases_crud.php' => 'challenge_testcases',
+        'submissions_crud.php' => 'submissions',
+        'user_xp_crud.php' => 'user_xp',
+        'leaderboard_crud.php' => 'leaderboard',
+        'enrollment_crud.php' => 'course_enrollment',
+        'progress_crud.php' => 'user_progress',
+        'subscriptions_crud.php' => 'subscription_plans',
+        'payments_crud.php' => 'payments',
+        'notifications_crud.php' => 'notifications',
+    ];
+}
+
+function getCrudTableDefinition($table)
+{
+    $definitions = getCrudTableDefinitions();
+
+    return $definitions[$table] ?? null;
+}
+
+function resolveCrudTableName($table = null, $module = null)
+{
+    $definitions = getCrudTableDefinitions();
+
+    if (!empty($table) && isset($definitions[$table])) {
+        return $table;
+    }
+
+    if (!empty($module)) {
+        $moduleMap = getCrudModuleTableMap();
+        $mappedTable = $moduleMap[$module] ?? null;
+
+        if ($mappedTable && isset($definitions[$mappedTable])) {
+            return $mappedTable;
+        }
+    }
+
+    return null;
+}
+
+function getCrudModuleByTable($table)
+{
+    $moduleMap = array_flip(getCrudModuleTableMap());
+
+    return $moduleMap[$table] ?? null;
+}
+
+function normalizeCrudValue($value)
+{
+    if (is_array($value)) {
+        return $value;
+    }
+
+    if ($value === '') {
+        return null;
+    }
+
+    if ($value === true) {
+        return 1;
+    }
+
+    if ($value === false) {
+        return 0;
+    }
+
+    if (is_string($value)) {
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        $lower = strtolower($trimmed);
+
+        if (in_array($lower, ['true', 'yes', 'on'], true)) {
+            return 1;
+        }
+
+        if (in_array($lower, ['false', 'no', 'off'], true)) {
+            return 0;
+        }
+
+        return $trimmed;
+    }
+
+    return $value;
+}
+
+function extractCrudData(array $input, $table)
+{
+    $definition = getCrudTableDefinition($table);
+
+    if (!$definition) {
+        return [
+            'success' => false,
+            'message' => 'Unknown table.',
+            'data' => [],
+        ];
+    }
+
+    $allowedColumns = $definition['columns'];
+    $aliases = $definition['aliases'] ?? [];
+    $controlKeys = ['table', 'module', 'id', 'record_id', 'primary_key', 'action', 'submit'];
+
+    if (isset($input['data']) && is_array($input['data'])) {
+        $data = $input['data'];
+    } elseif (isset($input['fields']) && is_array($input['fields'])) {
+        $data = $input['fields'];
+    } else {
+        $data = [];
+
+        foreach ($input as $key => $value) {
+            if (in_array($key, $controlKeys, true)) {
+                continue;
+            }
+
+            if (strpos($key, '_token') !== false) {
+                continue;
+            }
+
+            $data[$key] = $value;
+        }
+    }
+
+    $normalizedData = [];
+
+    foreach ($data as $key => $value) {
+        $targetKey = $aliases[$key] ?? $key;
+
+        if (!in_array($targetKey, $allowedColumns, true)) {
+            return [
+                'success' => false,
+                'message' => 'Unknown field: ' . $key,
+                'data' => [],
+            ];
+        }
+
+        $normalizedData[$targetKey] = normalizeCrudValue($value);
+    }
+
+    $transformers = $definition['transformers'] ?? [];
+
+    foreach ($transformers as $column => $transformer) {
+        if (array_key_exists($column, $normalizedData) && is_callable($transformer)) {
+            $normalizedData[$column] = $transformer($normalizedData[$column]);
+        }
+    }
+
+    return [
+        'success' => true,
+        'message' => 'OK',
+        'data' => $normalizedData,
+    ];
+}
+
+function setCrudFlashMessage($type, $message)
+{
+    $_SESSION['crud_flash'] = [
+        'type' => $type,
+        'message' => $message,
+    ];
+}
+
+function getCrudFlashMessage()
+{
+    if (empty($_SESSION['crud_flash'])) {
+        return null;
+    }
+
+    $flash = $_SESSION['crud_flash'];
+    unset($_SESSION['crud_flash']);
+
+    return $flash;
+}
+
+function getCrudRedirectTarget($table = null, $module = null)
+{
+    $moduleName = !empty($module) ? basename($module) : null;
+
+    if (!$moduleName && !empty($table)) {
+        $moduleName = getCrudModuleByTable($table);
+    }
+
+    if ($moduleName) {
+        return '../admin/' . basename($moduleName);
+    }
+
+    return '../dashboard.php';
+}
+
+function createRecord($table, $data)
+{
+    $definition = getCrudTableDefinition($table);
+
+    if (!$definition) {
+        return [
+            'success' => false,
+            'message' => 'Unknown table.',
+        ];
+    }
+
+    if (empty($data)) {
+        return [
+            'success' => false,
+            'message' => 'No allowed fields were provided.',
+        ];
+    }
+
+    $pdo = connectDB();
+    $columns = array_keys($data);
+    $placeholders = array_map(function ($column) {
+        return ':' . $column;
+    }, $columns);
+
+    $sql = 'INSERT INTO ' . $table . ' (`' . implode('`, `', $columns) . '`) VALUES (' . implode(', ', $placeholders) . ')';
+    $stmt = $pdo->prepare($sql);
+    $ok = $stmt->execute($data);
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? 'Record created successfully.' : 'Record creation failed.',
+        'insert_id' => $ok ? (int) $pdo->lastInsertId() : 0,
+    ];
+}
+
+function updateRecord($table, $id, $data)
+{
+    $definition = getCrudTableDefinition($table);
+
+    if (!$definition) {
+        return [
+            'success' => false,
+            'message' => 'Unknown table.',
+        ];
+    }
+
+    if (empty($data)) {
+        return [
+            'success' => false,
+            'message' => 'No allowed fields were provided.',
+        ];
+    }
+
+    $pdo = connectDB();
+    $setParts = [];
+    $params = [];
+
+    foreach ($data as $column => $value) {
+        $setParts[] = '`' . $column . '` = :' . $column;
+        $params[$column] = $value;
+    }
+
+    $primaryKey = $definition['primary_key'];
+    $sql = 'UPDATE ' . $table . ' SET ' . implode(', ', $setParts) . ' WHERE `' . $primaryKey . '` = :record_id';
+    $params['record_id'] = (int) $id;
+
+    $stmt = $pdo->prepare($sql);
+    $ok = $stmt->execute($params);
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? 'Record updated successfully.' : 'Record update failed.',
+    ];
+}
+
+function deleteRecord($table, $id)
+{
+    $definition = getCrudTableDefinition($table);
+
+    if (!$definition) {
+        return [
+            'success' => false,
+            'message' => 'Unknown table.',
+        ];
+    }
+
+    $pdo = connectDB();
+    $primaryKey = $definition['primary_key'];
+    $sql = 'DELETE FROM ' . $table . ' WHERE `' . $primaryKey . '` = :record_id';
+    $stmt = $pdo->prepare($sql);
+    $ok = $stmt->execute(['record_id' => (int) $id]);
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? 'Record deleted successfully.' : 'Record deletion failed.',
+    ];
+}
