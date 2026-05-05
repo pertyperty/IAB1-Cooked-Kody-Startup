@@ -27,14 +27,27 @@ body {
     align-items: center;
 }
 
-.site-header nav a {
-    margin-left: 1rem;
-    text-decoration: none;
-    color: var(--primary);
+.site-header h1 { margin: 0; font-size: 1.25rem; color: var(--primary); }
+
+.site-header nav {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
+.site-header nav a {
+    margin-left: 0;
+    text-decoration: none;
+    color: var(--primary);
+    padding: 0.35rem 0.45rem;
+    border-radius: 6px;
+}
+
+.site-header nav a:hover { background: rgba(15,118,110,0.06); }
+
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 1.5rem auto;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -64,6 +77,14 @@ form input {
     border-radius: 6px;
 }
 
+form textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
 form select {
     width: 100%;
     max-width: 360px;
@@ -82,6 +103,14 @@ form button {
     cursor: pointer;
 }
 
+/* utility button variants */
+.btn-secondary { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+
+.auth-switch {
+    margin-top: 1rem;
+    color: var(--muted);
+}
+
 .auth-switch {
     margin-top: 1rem;
     color: var(--muted);
@@ -97,6 +126,9 @@ table {
     border-collapse: collapse;
     margin-top: 0.75rem;
 }
+
+/* responsive table wrapper */
+.table-responsive { overflow-x: auto; }
 
 th,
 td {
@@ -117,3 +149,14 @@ section {
     border-radius: 8px;
     background: #fcfdff;
 }
+
+/* label helpers for forms */
+label { display: block; font-size: 0.9rem; color: var(--muted); }
+label input, label textarea, label select { margin-top: 0.35rem; }
+
+@media (max-width: 900px) {
+    .container { margin: 1rem; padding: 1rem; border-radius: 8px; }
+    .site-header { padding: 0.75rem 1rem; }
+    .site-header h1 { font-size: 1rem; }
+}
+

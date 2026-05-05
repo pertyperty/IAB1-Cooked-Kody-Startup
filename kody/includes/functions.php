@@ -707,6 +707,55 @@ function extractCrudData(array $input, $table)
     ];
 }
 
+// Basic server-side validation for CRUD data
+function validateCrudData($table, $data)
+{
+    $definition = getCrudTableDefinition($table);
+    if (!$definition) {
+        return ['success' => false, 'message' => 'Unknown table for validation.'];
+    }
+
+    foreach ($data as $col => $val) {
+        // skip nulls
+        if ($val === null || $val === '') {
+            continue;
+        }
+
+        // email validation
+        if (strpos($col, 'email') !== false) {
+            if (!filter_var($val, FILTER_VALIDATE_EMAIL)) {
+                return ['success' => false, 'message' => 'Invalid email for ' . $col];
+            }
+        }
+
+        // numeric checks for amounts/prices/xp
+        if (strpos($col, 'price') !== false || strpos($col, 'amount') !== false || strpos($col, 'xp') !== false) {
+            if (!is_numeric($val)) {
+                return ['success' => false, 'message' => 'Invalid numeric value for ' . $col];
+            }
+        }
+
+        // foreign key existence (if options available)
+        if (preg_match('/(_id)$/', $col)) {
+            if (!ctype_digit((string) $val)) {
+                return ['success' => false, 'message' => 'Invalid identifier for ' . $col];
+            }
+            $opts = getForeignKeyOptions($col);
+            if (!empty($opts) && !isset($opts[$val])) {
+                return ['success' => false, 'message' => 'Invalid selection for ' . $col];
+            }
+        }
+
+        // enum checks
+        $enums = getEnumOptionsForColumn($table, $col);
+        if (!empty($enums) && !array_key_exists((string) $val, $enums)) {
+            return ['success' => false, 'message' => 'Invalid option for ' . $col];
+        }
+    }
+
+    return ['success' => true, 'message' => 'OK'];
+}
+
 function setCrudFlashMessage($type, $message)
 {
     $_SESSION['crud_flash'] = [
@@ -838,4 +887,185 @@ function deleteRecord($table, $id)
         'success' => $ok,
         'message' => $ok ? 'Record deleted successfully.' : 'Record deletion failed.',
     ];
+}
+
+// Return options for common foreign key columns as [value => label]
+function getForeignKeyOptions($column)
+{
+    $pdo = connectDB();
+    $map = [];
+
+    switch ($column) {
+        case 'user_id':
+        case 'created_by':
+        case 'reviewed_by':
+        case 'moderator_id':
+        case 'instructor_id':
+            $rows = $pdo->query('SELECT user_id, first_name, last_name FROM users ORDER BY first_name, last_name')->fetchAll();
+            foreach ($rows as $r) {
+                $map[$r['user_id']] = trim($r['first_name'] . ' ' . $r['last_name']);
+            }
+            break;
+        case 'role_id':
+            $rows = $pdo->query('SELECT role_id, role_name FROM roles ORDER BY role_name')->fetchAll();
+            foreach ($rows as $r) { $map[$r['role_id']] = $r['role_name']; }
+            break;
+        case 'plan_id':
+            $rows = $pdo->query('SELECT plan_id, plan_name FROM subscription_plans ORDER BY price ASC')->fetchAll();
+            foreach ($rows as $r) { $map[$r['plan_id']] = $r['plan_name']; }
+            break;
+        case 'course_id':
+            $rows = $pdo->query('SELECT course_id, title FROM courses ORDER BY title')->fetchAll();
+            foreach ($rows as $r) { $map[$r['course_id']] = $r['title']; }
+            break;
+        case 'module_id':
+            $rows = $pdo->query('SELECT module_id, title FROM modules ORDER BY title')->fetchAll();
+            foreach ($rows as $r) { $map[$r['module_id']] = $r['title']; }
+            break;
+        case 'lesson_id':
+            $rows = $pdo->query('SELECT lesson_id, title FROM lessons ORDER BY title')->fetchAll();
+            foreach ($rows as $r) { $map[$r['lesson_id']] = $r['title']; }
+            break;
+        case 'challenge_id':
+            $rows = $pdo->query('SELECT challenge_id, title FROM challenges ORDER BY title')->fetchAll();
+            foreach ($rows as $r) { $map[$r['challenge_id']] = $r['title']; }
+            break;
+        case 'subscription_id':
+            $rows = $pdo->query('SELECT subscription_id, user_id, plan_id FROM user_subscriptions ORDER BY subscription_id DESC LIMIT 200')->fetchAll();
+            foreach ($rows as $r) { $map[$r['subscription_id']] = 'Subscription #' . $r['subscription_id']; }
+            break;
+        default:
+            // no options
+            break;
+    }
+
+    return $map;
+}
+
+// Return enum/select options for specific table/column combos
+function getEnumOptionsForColumn($table, $column)
+{
+    $options = [];
+
+    // common columns
+    if ($column === 'account_status') {
+        return ['active' => 'active', 'suspended' => 'suspended'];
+    }
+
+    switch ($table) {
+        case 'courses':
+            if ($column === 'difficulty') return ['beginner'=>'beginner','intermediate'=>'intermediate','advanced'=>'advanced'];
+            if ($column === 'is_archived') return [0=>'No',1=>'Yes'];
+            break;
+        case 'challenges':
+            if ($column === 'difficulty') return ['easy'=>'easy','medium'=>'medium','hard'=>'hard'];
+            if ($column === 'status') return ['pending'=>'pending','approved'=>'approved','rejected'=>'rejected'];
+            break;
+        case 'instructor_requests':
+            if ($column === 'status') return ['pending'=>'pending','approved'=>'approved','rejected'=>'rejected'];
+            break;
+        case 'submissions':
+            if ($column === 'execution_status') return ['pending'=>'pending','passed'=>'passed','failed'=>'failed','error'=>'error'];
+            break;
+        case 'course_enrollment':
+            if ($column === 'completion_status') return ['in_progress'=>'in_progress','completed'=>'completed','dropped'=>'dropped'];
+            break;
+        case 'user_progress':
+            if ($column === 'status') return ['not_started'=>'not_started','in_progress'=>'in_progress','completed'=>'completed'];
+            break;
+        case 'subscription_plans':
+            if ($column === 'billing_cycle') return ['monthly'=>'monthly','yearly'=>'yearly'];
+            break;
+        case 'user_subscriptions':
+            if ($column === 'status') return ['active'=>'active','expired'=>'expired','cancelled'=>'cancelled'];
+            break;
+        case 'payments':
+            if ($column === 'payment_status') return ['pending'=>'pending','completed'=>'completed','failed'=>'failed'];
+            break;
+        case 'roles':
+            // no enums
+            break;
+    }
+
+    return $options;
+}
+
+// Render a form field for a given table and column (used by admin UI)
+function renderCrudField($table, $column, $value = null)
+{
+    $html = '';
+    $opts = getEnumOptionsForColumn($table, $column);
+
+    // boolean-like fields
+    if ($column === 'is_archived' || $column === 'is_read') {
+        $checked = !empty($value) ? 'checked' : '';
+        $html .= '<label>' . htmlspecialchars($column) . '<input type="checkbox" name="' . htmlspecialchars($column) . '" value="1" ' . $checked . '></label>';
+        return $html;
+    }
+
+    // enums
+    if (!empty($opts)) {
+        $html .= '<label>' . htmlspecialchars($column) . '<select name="' . htmlspecialchars($column) . '">';
+        $html .= '<option value="">-- select --</option>';
+        foreach ($opts as $k => $v) {
+            $sel = ((string)$value === (string)$k) ? ' selected' : '';
+            $html .= '<option value="' . htmlspecialchars($k) . '"' . $sel . '>' . htmlspecialchars($v) . '</option>';
+        }
+        $html .= '</select></label>';
+        return $html;
+    }
+
+    // foreign keys
+    if (preg_match('/(_id)$/', $column)) {
+        $fk = getForeignKeyOptions($column);
+        if (!empty($fk)) {
+            $html .= '<label>' . htmlspecialchars($column) . '<select name="' . htmlspecialchars($column) . '">';
+            $html .= '<option value="">-- select --</option>';
+            foreach ($fk as $k => $v) {
+                $sel = ((string)$value === (string)$k) ? ' selected' : '';
+                $html .= '<option value="' . htmlspecialchars($k) . '"' . $sel . '>' . htmlspecialchars($v) . '</option>';
+            }
+            $html .= '</select></label>';
+            return $html;
+        }
+    }
+
+    // heuristics for input type
+    // image / file fields
+    if (strpos($column, 'profile') !== false || strpos($column, 'avatar') !== false || strpos($column, 'picture') !== false || strpos($column, 'image') !== false) {
+        $preview = '';
+        if (!empty($value)) {
+            $imgPath = '/kody/assets/uploads/' . ltrim($value, '/');
+            $preview = '<div class="img-preview"><img src="' . htmlspecialchars($imgPath) . '" alt="' . htmlspecialchars($column) . '" style="max-width:120px;display:block;margin-bottom:6px;"/></div>';
+        }
+        $html .= '<label>' . htmlspecialchars($column) . $preview . '<input type="file" accept="image/*" name="' . htmlspecialchars($column) . '"></label>';
+        return $html;
+    }
+    if (strpos($column, 'email') !== false) {
+        $html .= '<label>' . htmlspecialchars($column) . '<input type="email" name="' . htmlspecialchars($column) . '" value="' . htmlspecialchars((string)$value) . '"></label>';
+        return $html;
+    }
+
+    if ($column === 'password' || $column === 'password_hash') {
+        $html .= '<label>' . htmlspecialchars($column) . '<input type="password" name="' . htmlspecialchars($column) . '"></label>';
+        return $html;
+    }
+
+    if (strpos($column, 'date') !== false || strpos($column, 'at') !== false) {
+        $html .= '<label>' . htmlspecialchars($column) . '<input type="datetime-local" name="' . htmlspecialchars($column) . '" value="' . htmlspecialchars((string)$value) . '"></label>';
+        return $html;
+    }
+
+    if (strpos($column, 'description') !== false || strpos($column, 'content') !== false || strpos($column, 'message') !== false || strpos($column, 'notes') !== false) {
+        $html .= '<label>' . htmlspecialchars($column) . '<textarea name="' . htmlspecialchars($column) . '">' . htmlspecialchars((string)$value) . '</textarea></label>';
+        return $html;
+    }
+
+    // default text/number
+    $type = 'text';
+    if (strpos($column, 'price') !== false || strpos($column, 'amount') !== false) $type = 'number';
+    if (strpos($column, 'email') !== false) $type = 'email';
+
+    $html .= '<label>' . htmlspecialchars($column) . '<input type="' . $type . '" name="' . htmlspecialchars($column) . '" value="' . htmlspecialchars((string)$value) . '"></label>';
+    return $html;
 }

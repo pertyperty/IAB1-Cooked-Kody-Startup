@@ -1,0 +1,72 @@
+<?php
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+requireAdmin();
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+$crud_module = $_GET['module'] ?? null;
+$id = $_GET['id'] ?? null;
+
+if (empty($crud_module) || empty($id)) {
+    echo '<p class="notice">Missing module or id.</p>';
+    require_once __DIR__ . '/../includes/footer.php';
+    exit;
+}
+
+$table = resolveCrudTableName(null, $crud_module);
+$definition = getCrudTableDefinition($table);
+
+if (!$table || !$definition) {
+    echo '<p class="notice">Unknown module.</p>';
+    require_once __DIR__ . '/../includes/footer.php';
+    exit;
+}
+
+$pdo = connectDB();
+$pk = $definition['primary_key'];
+$stmt = $pdo->prepare('SELECT * FROM ' . $table . ' WHERE `' . $pk . '` = :id LIMIT 1');
+$stmt->execute(['id' => $id]);
+$row = $stmt->fetch();
+
+if (!$row) {
+    echo '<p class="notice">Record not found.</p>';
+    require_once __DIR__ . '/../includes/footer.php';
+    exit;
+}
+
+?>
+
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <h3>Edit</h3>
+        <a href="index.php">Dashboard</a>
+        <a href="<?php echo htmlspecialchars($crud_module); ?>">Back to list</a>
+    </aside>
+
+    <div class="admin-main">
+        <h2>Edit <?php echo htmlspecialchars($table); ?> #<?php echo htmlspecialchars($row[$pk]); ?></h2>
+
+        <section>
+            <form method="post" action="../actions/update.php" enctype="multipart/form-data">
+                <input type="hidden" name="module" value="<?php echo htmlspecialchars($crud_module); ?>">
+                <input type="hidden" name="table" value="<?php echo htmlspecialchars($table); ?>">
+                <input type="hidden" name="id" value="<?php echo htmlspecialchars($row[$pk]); ?>">
+
+                <div class="form-grid">
+                    <?php
+                    foreach ($definition['columns'] as $col) {
+                        if ($col === $pk) continue;
+                        echo renderCrudField($table, $col, $row[$col] ?? null);
+                    }
+                    ?>
+                </div>
+
+                <button type="submit">Save changes</button>
+            </form>
+        </section>
+
+    </div>
+</div>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

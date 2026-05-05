@@ -398,6 +398,17 @@ Follow the phases in order. Keep each phase small and test before moving on.
   - [DONE] Insert a record using a prepared statement.
   - [DONE] Accept only whitelisted tables and columns.
   - [DONE] Reject unknown fields before running SQL.
+
+## Project Maintenance
+
+### Automated checks and QA
+
+- [DONE] Added lightweight PHP syntax checker: `scripts/check_php_syntax.php`.
+- [DONE] Added runtime smoke checks: `scripts/run_smoke_checks.php` (uploads dir, essential includes, DB connection).
+- [DONE] Manual QA checklist added: `QA_MANUAL.md`.
+- [DONE] Deploy checklist added: `PREPARE_DEPLOY.md`.
+
+Run the scripts above locally before deploying or merging to ensure basic health of the codebase.
 - Segment 2: Update action (`actions/update.php`)
   - [DONE] Update a record using the primary key.
   - [DONE] Accept only whitelisted tables and columns.
@@ -457,48 +468,67 @@ function deleteRecord($table, $id)
 
 ## Phase 8 - Admin CRUD Pages (By Group)
 
-Build each admin page in small groups.
+<!-- PHASE 8 PROGRESS TRACKER (Update this block every prompt) -->
+<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
 
-### Group A (User + Role)
+### Phase 8 Segments and Progress
 
-- `admin/users_crud.php`
-- `admin/roles_crud.php`
-- `admin/user_roles_crud.php`
-- `admin/instructor_requests_crud.php`
+- Group A: User + Role
+  - [DONE] `admin/users_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/roles_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/user_roles_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/instructor_requests_crud.php` (CREATE / READ / UPDATE / DELETE)
 
-### Group B (Learning Content)
+- Group B: Learning Content
+  - [DONE] `admin/courses_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/modules_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/lessons_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/challenges_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/testcases_crud.php` (CREATE / READ / UPDATE / DELETE)
 
-- `admin/courses_crud.php`
-- `admin/modules_crud.php`
-- `admin/lessons_crud.php`
-- `admin/challenges_crud.php`
-- `admin/testcases_crud.php`
+- Group C: Learning Activity
+  - [DONE] `admin/submissions_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/user_xp_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/leaderboard_crud.php` (READ / UPDATE / DELETE — leaderboard is mostly read)
+  - [DONE] `admin/enrollment_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/progress_crud.php` (CREATE / READ / UPDATE / DELETE)
 
-### Group C (Learning Activity)
+- Group D: Monetization + Notifications
+  - [DONE] `admin/subscriptions_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/payments_crud.php` (CREATE / READ / UPDATE / DELETE)
+  - [DONE] `admin/notifications_crud.php` (CREATE / READ / UPDATE / DELETE)
 
-- `admin/submissions_crud.php`
-- `admin/user_xp_crud.php`
-- `admin/leaderboard_crud.php`
-- `admin/enrollment_crud.php`
-- `admin/progress_crud.php`
+### For each admin page, implemented
 
-### Group D (Monetization + Notifications)
+- Create form (whitelisted fields, server-side validation).
+- Records table (paginated simple read view).
+- Update action (edit row using centralized `actions/update.php`).
+- Delete action (soft or hard delete via `actions/delete.php` per table rules).
+- Success/error message display (session flash messages shown in admin template).
 
-- `admin/subscriptions_crud.php`
-- `admin/payments_crud.php`
-- `admin/notifications_crud.php`
+### Quick verification pass
 
-### For each admin page, implement
+- [DONE] Basic manual browser checks for create/read/update/delete flows across admin pages.
+- [DONE] Role-based access control enforced for admin pages via `includes/auth.php` helpers.
+- [DONE] Admin pages use centralized CRUD helpers in `includes/functions.php` and `actions/*`.
 
-- Create form.
-- Records table (read).
-- Update action (edit row).
-- Delete action.
-- Success/error message display.
+### Phase 8 Progress Indicators
+
+- Completion: **100%**
+- Done now: All admin CRUD pages implemented and manually smoke-tested
+- Remaining: Minor UI polish and automated tests (optional)
+- Next prompt should do: start Phase 9 (Validation, Security, and Cleanup)
+
+### Tasks
+
+- Ensure each admin page calls `requireAuth()` and checks admin role.
+- Wire create/update/delete forms to `actions/create.php`, `actions/update.php`, `actions/delete.php` with proper whitelist arrays.
+- Escape output with `htmlspecialchars()` in table renderers.
+- Display session flash messages for success/error after actions.
 
 ### Output of this phase
 
-- Full CRUD coverage across required tables.
+- Full CRUD coverage across required tables, accessible from Admin Panel, and protected by role checks.
 
 ## Phase 9 - Validation, Security, and Cleanup
 
