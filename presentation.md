@@ -54,7 +54,7 @@ Kody is designed for:
 
 ---
 
-## 3:00–14:00 — System Demonstration (10 minutes)
+## 3:00–14:00 — System Demonstration (11 minutes)
 
 > Goal: Show working CRUD and core user journeys. Keep each step short and narrate what table(s) it touches.
 
