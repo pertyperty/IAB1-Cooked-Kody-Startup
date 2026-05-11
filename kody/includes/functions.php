@@ -32,6 +32,18 @@ function enrollUser($userId, $courseId)
         'completion_status' => 'in_progress',
     ]);
 
+    if ($ok) {
+        $courseTitle = 'your selected course';
+        $courseStmt = $pdo->prepare('SELECT title FROM courses WHERE course_id = :course_id LIMIT 1');
+        $courseStmt->execute(['course_id' => $courseId]);
+        $courseRow = $courseStmt->fetch();
+        if (!empty($courseRow['title'])) {
+            $courseTitle = (string) $courseRow['title'];
+        }
+
+        createNotification((int) $userId, 'You enrolled in "' . $courseTitle . '".');
+    }
+
     return [
         'success' => $ok,
         'message' => $ok ? 'Enrollment successful.' : 'Enrollment failed.',
@@ -54,13 +66,259 @@ function awardXP($userId, $xp)
 function getLeaderboard()
 {
     $pdo = connectDB();
-    $sql = 'SELECT u.user_id, u.first_name, u.last_name, u.email, u.account_status,
+    $baseSql = 'SELECT u.user_id, u.first_name, u.last_name, u.email, u.account_status,
                    COALESCE(x.total_xp, 0) AS total_xp,
                    COALESCE(x.level, 1) AS level
             FROM users u
             LEFT JOIN user_xp x ON x.user_id = u.user_id
             ORDER BY total_xp DESC';
+    $rows = $pdo->query($baseSql)->fetchAll();
+
+    syncLeaderboardRanks($rows);
+
+    $sql = 'SELECT u.user_id, u.first_name, u.last_name, u.email, u.account_status,
+                   COALESCE(x.total_xp, 0) AS total_xp,
+                   COALESCE(x.level, 1) AS level,
+                   COALESCE(lb.rank_position, 0) AS rank_position
+            FROM users u
+            LEFT JOIN user_xp x ON x.user_id = u.user_id
+            LEFT JOIN leaderboard lb ON lb.user_id = u.user_id
+            ORDER BY total_xp DESC';
+
     return $pdo->query($sql)->fetchAll();
+}
+
+function syncLeaderboardRanks(array $rows)
+{
+    $pdo = connectDB();
+
+    try {
+        $pdo->beginTransaction();
+        $pdo->exec('DELETE FROM leaderboard');
+
+        if (!empty($rows)) {
+            $insert = $pdo->prepare('INSERT INTO leaderboard (user_id, rank_position) VALUES (:user_id, :rank_position)');
+            $rank = 1;
+            foreach ($rows as $row) {
+                $insert->execute([
+                    'user_id' => (int) $row['user_id'],
+                    'rank_position' => $rank,
+                ]);
+                $rank++;
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+    }
+}
+
+function createNotification($userId, $message)
+{
+    $pdo = connectDB();
+    $sql = 'INSERT INTO notifications (user_id, message, is_read, created_at)
+            VALUES (:user_id, :message, :is_read, :created_at)';
+    $stmt = $pdo->prepare($sql);
+
+    return $stmt->execute([
+        'user_id' => (int) $userId,
+        'message' => (string) $message,
+        'is_read' => 0,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+}
+
+function getUserNotifications($userId, $limit = 20, $onlyUnread = false)
+{
+    $pdo = connectDB();
+    $where = 'WHERE user_id = :user_id';
+    if ($onlyUnread) {
+        $where .= ' AND is_read = 0';
+    }
+
+    $sql = 'SELECT notification_id, user_id, message, is_read, created_at
+            FROM notifications
+            ' . $where . '
+            ORDER BY notification_id DESC
+            LIMIT :limit';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':user_id', (int) $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', max(1, (int) $limit), PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll();
+}
+
+function getUnreadNotificationCount($userId)
+{
+    $pdo = connectDB();
+    $sql = 'SELECT COUNT(*) FROM notifications WHERE user_id = :user_id AND is_read = 0';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['user_id' => (int) $userId]);
+    return (int) $stmt->fetchColumn();
+}
+
+function markNotificationAsRead($userId, $notificationId)
+{
+    $pdo = connectDB();
+    $sql = 'UPDATE notifications
+            SET is_read = 1
+            WHERE notification_id = :notification_id AND user_id = :user_id';
+    $stmt = $pdo->prepare($sql);
+    return $stmt->execute([
+        'notification_id' => (int) $notificationId,
+        'user_id' => (int) $userId,
+    ]);
+}
+
+function markAllNotificationsAsRead($userId)
+{
+    $pdo = connectDB();
+    $sql = 'UPDATE notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0';
+    $stmt = $pdo->prepare($sql);
+    return $stmt->execute(['user_id' => (int) $userId]);
+}
+
+function getUserRoleAssignments($userId)
+{
+    $pdo = connectDB();
+    $sql = 'SELECT ur.user_role_id, ur.user_id, ur.role_id, ur.assigned_at, r.role_name
+            FROM user_roles ur
+            JOIN roles r ON r.role_id = ur.role_id
+            WHERE ur.user_id = :user_id
+            ORDER BY ur.assigned_at DESC, ur.user_role_id DESC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['user_id' => (int) $userId]);
+    return $stmt->fetchAll();
+}
+
+function hasRole($userId, $roleName)
+{
+    $pdo = connectDB();
+    $sql = 'SELECT 1
+            FROM user_roles ur
+            JOIN roles r ON r.role_id = ur.role_id
+            WHERE ur.user_id = :user_id AND r.role_name = :role_name
+            LIMIT 1';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        'user_id' => (int) $userId,
+        'role_name' => (string) $roleName,
+    ]);
+    return (bool) $stmt->fetchColumn();
+}
+
+function getInstructorRequestsByUser($userId)
+{
+    $pdo = connectDB();
+    $sql = 'SELECT ir.request_id, ir.user_id, ir.request_message, ir.status, ir.reviewed_by,
+                   ir.requested_at, ir.reviewed_at,
+                   u.first_name AS reviewer_first_name,
+                   u.last_name AS reviewer_last_name
+            FROM instructor_requests ir
+            LEFT JOIN users u ON u.user_id = ir.reviewed_by
+            WHERE ir.user_id = :user_id
+            ORDER BY ir.request_id DESC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['user_id' => (int) $userId]);
+    return $stmt->fetchAll();
+}
+
+function submitInstructorRequest($userId, $requestMessage)
+{
+    $pdo = connectDB();
+
+    if (hasRole($userId, 'instructor') || hasRole($userId, 'admin')) {
+        return [
+            'success' => false,
+            'message' => 'You already have instructor-level access.',
+        ];
+    }
+
+    $pendingSql = 'SELECT request_id
+                   FROM instructor_requests
+                   WHERE user_id = :user_id AND status = :status
+                   LIMIT 1';
+    $pendingStmt = $pdo->prepare($pendingSql);
+    $pendingStmt->execute([
+        'user_id' => (int) $userId,
+        'status' => 'pending',
+    ]);
+
+    if ($pendingStmt->fetch()) {
+        return [
+            'success' => false,
+            'message' => 'You already have a pending instructor request.',
+        ];
+    }
+
+    $sql = 'INSERT INTO instructor_requests (user_id, request_message, status, requested_at)
+            VALUES (:user_id, :request_message, :status, :requested_at)';
+    $stmt = $pdo->prepare($sql);
+    $ok = $stmt->execute([
+        'user_id' => (int) $userId,
+        'request_message' => (string) $requestMessage,
+        'status' => 'pending',
+        'requested_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    if ($ok) {
+        createNotification((int) $userId, 'Your instructor request has been submitted for review.');
+    }
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? 'Instructor request submitted.' : 'Failed to submit instructor request.',
+    ];
+}
+
+function getChallengeTestcases($challengeId)
+{
+    $pdo = connectDB();
+    $sql = 'SELECT testcase_id, challenge_id, input_data, expected_output
+            FROM challenge_testcases
+            WHERE challenge_id = :challenge_id
+            ORDER BY testcase_id ASC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['challenge_id' => (int) $challengeId]);
+    return $stmt->fetchAll();
+}
+
+function evaluateOutputAgainstTestcases($programOutput, array $testcases)
+{
+    $normalizedOutput = trim((string) $programOutput);
+
+    if (count($testcases) === 0) {
+        return [
+            'status' => null,
+            'score' => null,
+            'matched' => 0,
+            'total' => 0,
+        ];
+    }
+
+    $matched = 0;
+    foreach ($testcases as $testcase) {
+        $expected = trim((string) ($testcase['expected_output'] ?? ''));
+        if ($expected !== '' && strpos($normalizedOutput, $expected) !== false) {
+            $matched++;
+        }
+    }
+
+    $total = count($testcases);
+    $score = (int) round(($matched / max(1, $total)) * 100);
+    $status = $matched === $total ? 'passed' : ($matched > 0 ? 'failed' : 'error');
+
+    return [
+        'status' => $status,
+        'score' => $score,
+        'matched' => $matched,
+        'total' => $total,
+    ];
 }
 
 function getUserDashboard($userId)
@@ -560,7 +818,9 @@ function getCrudModuleTableMap()
         'enrollment_crud.php' => 'course_enrollment',
         'progress_crud.php' => 'user_progress',
         'subscriptions_crud.php' => 'subscription_plans',
+        'user_subscriptions_crud.php' => 'user_subscriptions',
         'payments_crud.php' => 'payments',
+        'moderation_reviews_crud.php' => 'moderation_reviews',
         'notifications_crud.php' => 'notifications',
     ];
 }
@@ -859,6 +1119,14 @@ function updateRecord($table, $id, $data)
     }
 
     $pdo = connectDB();
+
+    if ($table === 'instructor_requests' && isset($data['status'])) {
+        $status = (string) $data['status'];
+        if (($status === 'approved' || $status === 'rejected') && !isset($data['reviewed_at'])) {
+            $data['reviewed_at'] = date('Y-m-d H:i:s');
+        }
+    }
+
     $setParts = [];
     $params = [];
 

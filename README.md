@@ -1,56 +1,64 @@
-# 📦 Kody Web Application (CRUD Demonstration System)
+# Kody - Modern Learning Management System
+
+A full-featured web application for online coding education with gamification, course management, and student progression tracking.
 
 ---
 
-## 📌 Overview
+## Overview
 
-This project is a web-based application developed using **PHP, MySQL, HTML, CSS, and JavaScript**. It demonstrates full **CRUD (Create, Read, Update, Delete)** functionality across all database tables defined in the Kody system.
+Kody is a Learning Management System (LMS) built with PHP, MySQL, HTML5, modern CSS, and vanilla JavaScript.
 
-### The system validates
+### System validates
 
-* Database Design Quality
-* Full CRUD Implementation
-* Database Integration with UI
-* Functional System Demonstration
-
----
-
-## 🧱 System Architecture
-
-The project follows a modular structure:
-
-* **Core System Pages** → User-facing flows (login, dashboard, course interaction)
-* **Admin/CRUD Pages** → Direct table manipulation for demonstration
-* **Processing Files** → Handle database operations (INSERT, UPDATE, DELETE)
-* **Shared Includes** → Database connection, authentication, reusable functions
+- Enterprise-grade relational database design.
+- Full CRUD operations across core entities.
+- Database integration with user and admin interfaces.
+- Real workflow coverage: authentication, enrollment, progress, submissions, subscriptions.
+- Modern dark UI with responsive behavior.
 
 ---
 
-## 📁 Project Structure
+## Architecture and Stack
 
-```bash
+| Layer | Technology |
+| ----- | ---------- |
+| Frontend | HTML5, CSS (dark UI), Vanilla JavaScript |
+| Backend | PHP 7.4+ |
+| Database | MySQL 8.0+ |
+| UX | Accessibility-first, responsive layout |
+
+### Design principles
+
+- Modular structure for maintainability.
+- Security-first defaults (password hashing, prepared statements, sanitization).
+- Dark UI with consistent component styling.
+- Accessibility and keyboard-focus support.
+
+---
+
+## Project Structure
+
+```text
 /kody/
-│
 ├── index.php
 ├── login.php
 ├── register.php
 ├── logout.php
-│
 ├── dashboard.php
-│
 ├── course.php
 ├── enroll.php
 ├── progress.php
-│
 ├── submit_code.php
 ├── process_submission.php
-│
 ├── leaderboard.php
-│
 ├── subscription.php
 ├── payment.php
-│
+├── actions/
+│   ├── create.php
+│   ├── update.php
+│   └── delete.php
 ├── admin/
+│   ├── index.php
 │   ├── users_crud.php
 │   ├── roles_crud.php
 │   ├── user_roles_crud.php
@@ -66,233 +74,168 @@ The project follows a modular structure:
 │   ├── enrollment_crud.php
 │   ├── progress_crud.php
 │   ├── subscriptions_crud.php
+│   ├── user_subscriptions_crud.php
 │   ├── payments_crud.php
+│   ├── moderation_reviews_crud.php
 │   ├── notifications_crud.php
-│
-├── actions/
-│   ├── create.php
-│   ├── update.php
-│   ├── delete.php
-│
+│   └── edit.php
 ├── includes/
 │   ├── db.php
 │   ├── auth.php
 │   ├── functions.php
+│   ├── admin_crud.php
 │   ├── header.php
 │   └── footer.php
-│
-├── assets/
-│   ├── css/
-│   ├── js/
-│
-└── README.md
+└── assets/
+    ├── css/
+    │   ├── style.css
+    │   └── admin.css
+    └── js/
+        └── app.js
 ```
 
 ---
 
-## ⚙️ Core Functional Pages
+## Core Workflows
 
-### index.php
+### Registration and login
 
-* Redirects user based on authentication state
+Files: `register.php`, `login.php`, `logout.php`.
 
-### login.php
-
-* Handles user login
-* Function:
-
-```php
-loginUser(email, password)
+```text
+1) User submits registration form
+2) System validates fields and uniqueness
+3) Password is hashed
+4) User row is inserted
+5) Learner role is assigned
+6) User logs in and starts a session
 ```
 
-### register.php
+### Learning flow
 
-* Creates new user account
-* Function:
+Files: `course.php`, `enroll.php`, `progress.php`, `submit_code.php`, `process_submission.php`.
 
-```php
-registerUser(data)
+```text
+1) Browse courses
+2) Enroll in a course
+3) Open modules and lessons
+4) Submit challenge solution
+5) Record submission status and score
+6) Update progress and XP
 ```
 
-### dashboard.php
+### Subscription and payment
 
-* Displays:
+Files: `subscription.php`, `payment.php`.
 
-  * User XP
-  * Enrolled courses
-  * Progress summary
-* Function:
-
-```php
-getUserDashboard(user_id)
-```
-
----
-
-## 🎯 Course & Learning Flow
-
-### course.php
-
-* Displays course → modules → lessons → challenges
-* Functions:
-
-```php
-getCourse(course_id)
-getModules(course_id)
-```
-
-### enroll.php
-
-* Inserts into `course_enrollment`
-* Function:
-
-```php
-enrollUser(user_id, course_id)
-```
-
-### progress.php
-
-* Displays and updates progress
-* Functions:
-
-```php
-getUserProgress(user_id)
-updateProgress(...)
+```text
+1) User selects a plan
+2) Payment record is created
+3) Subscription is activated or updated
+4) Status and dates are persisted
 ```
 
 ---
 
-## 💻 Coding & Gamification
+## Role-Based Access Control
 
-### submit_code.php
+Tables: `roles`, `user_roles`.
 
-* UI for challenge submission
-
-### process_submission.php
-
-* Handles:
-
-  * Insert submission
-  * Update XP
-  * Update progress
-
-* Functions:
-
-```php
-submitCode(data)
-awardXP(user_id, xp)
-markChallengeComplete(user_id, challenge_id)
-```
+- `admin`: full system and admin panel access.
+- `instructor`: course/content authoring role.
+- `learner`: core learning access.
+- `contributor`: challenge contribution role.
+- `moderator`: moderation and review role.
 
 ---
 
-## 🏆 Leaderboard
+## Database Coverage
 
-### leaderboard.php
+### Main schema groups
 
-* Displays rankings using JOIN
-* Function:
+| Category | Tables |
+| -------- | ------ |
+| Users and Auth | users, roles, user_roles, instructor_requests |
+| Learning | courses, modules, lessons, challenges, challenge_testcases |
+| Progress and Submissions | submissions, user_progress, course_enrollment |
+| Gamification | user_xp, leaderboard |
+| Monetization | subscription_plans, user_subscriptions, payments |
+| Governance and Messaging | moderation_reviews, notifications |
 
-```php
-getLeaderboard()
-```
+### Notes from audit
 
----
-
-## 💰 Monetization
-
-### subscription.php
-
-* Displays subscription plans
-
-### payment.php
-
-* Simulates payment
-* Function:
-
-```php
-createPayment(user_id, plan_id)
-```
+- Most core workflow tables are actively used.
+- Some schema fields are currently reserved for future features.
+- Admin CRUD coverage includes all major tables, including `user_subscriptions` and `moderation_reviews`.
 
 ---
 
-## 🔥 Admin CRUD Panel
+## UI and Theme
 
-Each CRUD page includes:
-
-* Create form
-* Read table view
-* Update functionality
-* Delete action
+- Dark theme tokens are centralized in `assets/css/style.css`.
+- Admin visual system and table styles are in `assets/css/admin.css`.
+- Common links/buttons/inputs are normalized for consistent rendering.
+- Scroll-position retention is handled in `assets/js/app.js` to avoid jumping to top after same-page actions.
 
 ---
 
-## 🧩 Shared Components
+## Getting Started
 
-### db.php
+### Prerequisites
 
-```php
-connectDB()
-```
+- PHP 7.4+
+- MySQL 8.0+
+- Apache/Nginx (or XAMPP/LAMP/LEMP)
 
-### auth.php
-
-```php
-checkAuth()
-getCurrentUser()
-```
-
-### functions.php
-
-* Contains reusable logic:
-
-```php
-enrollUser()
-awardXP()
-getLeaderboard()
-```
-
----
-
-## 📊 CRUD Coverage Summary
-
-| Table               | Covered By                   |
-| ------------------- | ---------------------------- |
-| users               | users_crud.php               |
-| roles               | roles_crud.php               |
-| user_roles          | user_roles_crud.php          |
-| instructor_requests | instructor_requests_crud.php |
-| courses             | courses_crud.php             |
-| modules             | modules_crud.php             |
-| lessons             | lessons_crud.php             |
-| challenges          | challenges_crud.php          |
-| challenge_testcases | testcases_crud.php           |
-| submissions         | submissions_crud.php         |
-| user_xp             | user_xp_crud.php             |
-| leaderboard         | leaderboard_crud.php         |
-| course_enrollment   | enrollment_crud.php          |
-| user_progress       | progress_crud.php            |
-| subscription_plans  | subscription.php             |
-| user_subscriptions  | subscriptions_crud.php       |
-| payments            | payments_crud.php            |
-| notifications       | notifications_crud.php       |
-
----
-
-## 🚀 Key Features
-
-* Full CRUD functionality across all tables
-* Relational integrity via foreign keys
-* Gamification system (XP, leaderboard)
-* Course enrollment and progress tracking
-* Monetization simulation
-* Role-based system structure
-
----
-
-## Database Setup
-
-Run the SQL file:
+### Setup
 
 ```bash
-database.sql
+# 1) Create schema
+mysql -u root -p < database.sql
+
+# 2) Optional seed data
+mysql -u root -p kody_db < seed_phase_0_5_rerun_safe.sql
+
+# 3) Configure DB credentials
+# edit: kody/includes/db.php
+
+# 4) Open app
+# http://localhost/kody/index.php
+```
+
+---
+
+## Validation Scripts
+
+```bash
+php scripts/check_php_syntax.php
+php scripts/run_smoke_checks.php
+```
+
+If local `php` is unavailable in shell, use your IDE problem panel and web runtime checks.
+
+---
+
+## Common Issues
+
+| Issue | Cause | Fix |
+| ----- | ----- | --- |
+| Database connection failed | Invalid credentials | Update `includes/db.php` |
+| Blank page | PHP error | Check error log and syntax |
+| CSS not loading | Wrong path | Confirm files under `assets/css/` |
+| Admin page denied | Role/session mismatch | Ensure user has admin role |
+
+---
+
+## Contributing
+
+1. Create a branch from `main`.
+2. Keep changes scoped and tested.
+3. Run smoke/syntax checks when available.
+4. Open a pull request with a clear summary.
+
+---
+
+## Status
+
+Production-ready baseline with modern dark UI, end-to-end core workflows, and broad CRUD/admin coverage.

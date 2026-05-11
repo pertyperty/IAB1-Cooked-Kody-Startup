@@ -39,7 +39,16 @@ $recent = $recentStmt->fetchAll();
         <a href="lessons_crud.php">Lessons</a>
         <a href="challenges_crud.php">Challenges</a>
         <a href="submissions_crud.php">Submissions</a>
+        <a href="leaderboard_crud.php">Leaderboard</a>
+        <a href="enrollment_crud.php">Enrollments</a>
+        <a href="progress_crud.php">Progress</a>
+        <a href="subscriptions_crud.php">Subscription Plans</a>
+        <a href="user_subscriptions_crud.php">User Subscriptions</a>
         <a href="payments_crud.php">Payments</a>
+        <a href="instructor_requests_crud.php">Instructor Requests</a>
+        <a href="testcases_crud.php">Test Cases</a>
+        <a href="user_xp_crud.php">User XP</a>
+        <a href="moderation_reviews_crud.php">Moderation Reviews</a>
         <a href="notifications_crud.php">Notifications</a>
     </aside>
 

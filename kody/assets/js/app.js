@@ -42,4 +42,43 @@ console.log('Kody starter app loaded.');
 			setTimeout(function(){ try{ flash.remove(); }catch(e){} }, 4200);
 		}
 	});
+
+	// Keep users at their current reading position after same-page submits/actions.
+	var scrollPosKey = 'kody-scroll-pos';
+	var scrollPathKey = 'kody-scroll-path';
+
+	function rememberScrollForCurrentPath(){
+		try {
+			sessionStorage.setItem(scrollPosKey, String(window.scrollY || window.pageYOffset || 0));
+			sessionStorage.setItem(scrollPathKey, window.location.pathname);
+		} catch (e) {}
+	}
+
+	document.addEventListener('click', function(ev){
+		var target = ev.target;
+		if (!target) return;
+		var anchor = target.closest('a[href="#"]');
+		if (anchor && !anchor.classList.contains('skip-link')) {
+			ev.preventDefault();
+		}
+		var clickable = target.closest('button, input[type="submit"], input[type="button"], input[type="reset"], a.btn, a.button-link, a.card-button, a.primary');
+		if (!clickable) return;
+		rememberScrollForCurrentPath();
+	}, true);
+
+	document.addEventListener('submit', function(){
+		rememberScrollForCurrentPath();
+	}, true);
+
+	window.addEventListener('load', function(){
+		try {
+			var savedPath = sessionStorage.getItem(scrollPathKey);
+			var savedPos = sessionStorage.getItem(scrollPosKey);
+			if (!savedPath || !savedPos) return;
+			if (savedPath !== window.location.pathname) return;
+			window.scrollTo(0, parseInt(savedPos, 10) || 0);
+			sessionStorage.removeItem(scrollPosKey);
+			sessionStorage.removeItem(scrollPathKey);
+		} catch (e) {}
+	});
 })();

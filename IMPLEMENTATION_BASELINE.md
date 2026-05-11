@@ -1,605 +1,179 @@
-# Kody Implementation Baseline (Beginner-Friendly)
-
-This file is your step-by-step development guide for building Kody.
-Follow the phases in order. Keep each phase small and test before moving on.
+# Kody Development and Deployment Baseline
 
-## How to Use This Guide
+## Status
 
-- Build one section at a time. (Alternate between 3 members)
-- Test each page manually in browser.
-- Commit your progress after each section.
-- If a section fails, fix it first before adding new features.
-
-## Phase 0 - Environment Setup
-
-### Tasks
-
-- Install XAMPP (or any PHP + MySQL stack).
-- Start Apache and MySQL.
-- Create database `kody_db`.
-- Run the SQL schema from `README.md`.
-- Put project folder in web root (for XAMPP, `htdocs`).
-- Confirm `http://localhost/IMDBSE2 Software/index.php` opens.
-
-### Output of this phase
-
-- Project opens in browser.
-- Database tables are created.
-
-## Phase 0.5 - Seed Data
-
-### Tasks
-
-- Insert at least:
-  - 2 users (1 learner, 1 admin)
-  - 2 courses
-  - 2 modules per course
-  - 2 lessons per module
-  - 2 challenges per module
-- Insert test XP into `user_xp`
-- Insert sample subscription plans
-
-### Output of this phase
-
-- System has visible data for testing
-- Dashboard, course, and leaderboard pages are not empty
-
-## Phase 1 - Base System Files
-
-<!-- PHASE 1 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 1 Segments and Progress
-
-- Segment 1: Database + Auth base
-  - [DONE] `includes/db.php` configured with reusable `connectDB()`.
-  - [DONE] `includes/auth.php` has `checkAuth()`, `requireAuth()`, `getCurrentUser()`.
-- Segment 2: Shared reusable functions
-  - [DONE] `includes/functions.php` has starter reusable DB functions (`enrollUser`, `awardXP`, `getLeaderboard`).
-- Segment 3: Shared layout and assets
-  - [DONE] `includes/header.php` and `includes/footer.php` render shared layout.
-  - [DONE] CSS and JS linked through shared includes.
-- Segment 4: Required navigation links in header
-  - [DONE] Dashboard
-  - [DONE] Courses
-  - [DONE] Leaderboard
-  - [DONE] Subscription
-  - [DONE] Admin Panel (now role-aware: visible to admins only)
-  - [DONE] Logout
-  - [DONE] Admins still see core learner nav links plus Admin Panel
-- Segment 5: Quick verification pass
-  - [DONE] Opened key pages in browser and confirmed no include/path errors.
-
-### Phase 1 Progress Indicators
-
-- Completion: **100%**
-- Done now: all Phase 1 tasks including navigation and verification
-- Remaining: none
-- Next prompt should do: start Phase 2 (Authentication Flow)
-
-### Tasks
-
-- Configure database connection in `includes/db.php`.
-- Create session/auth helper functions in `includes/auth.php`.
-- Add reusable DB functions in `includes/functions.php`.
-- Confirm `includes/header.php` and `includes/footer.php` render correctly.
-- Confirm CSS and JS load from `assets/css/style.css` and `assets/js/app.js`.
-- Add a navigation bar in `header.php` with links to:
-  - Dashboard
-  - Courses
-  - Leaderboard
-  - Subscription
-  - Admin Panel
-  - Logout
-
-### Output of this phase
-
-- Shared includes work for all pages.
-- No path errors for include files.
-
-## Phase 2 - Authentication Flow
-
-<!-- PHASE 2 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 2 Segments and Progress
-
-- Segment 1: Registration flow in `register.php`
-  - [DONE] Validate first name, last name, email, and password.
-  - [DONE] Hash password using `password_hash()`.
-  - [DONE] Insert new user into `users` table using prepared statement.
-  - [DONE] Handle duplicate email with user-friendly message.
-- Segment 2: Login flow in `login.php`
-  - [DONE] Find user by email using prepared statement.
-  - [DONE] Verify password using `password_verify()`.
-  - [DONE] Store session values (`user_id`, `first_name`, `last_name`, `email`).
-  - [DONE] Redirect successful login by role (admin -> Admin Panel, learner -> dashboard).
-- Segment 3: Logout and index redirect flow
-  - [DONE] `logout.php` clears session and redirects to login.
-  - [DONE] `index.php` redirects by authentication state.
-- Segment 4: Auth UX adjustments from base system files
-  - [DONE] Added Login/Register links in shared navbar for guests.
-  - [DONE] Kept Logout link visible only for authenticated users.
-  - [DONE] Kept Admin Panel link visible only for authenticated users.
-  - [DONE] Added register call-to-action in login page.
-  - [DONE] Added login call-to-action in register page.
-- Segment 5: Schema-integrated role handling (`roles` + `user_roles`)
-  - [DONE] New registrations are assigned `learner` role in `user_roles`.
-  - [DONE] Login now loads roles from DB and sets admin session flag.
-  - [DONE] Admin pages now require admin role (direct URL access blocked for non-admin users).
-- Segment 6: Schema-integrated default account records
-  - [DONE] New registrations create default `user_xp` record (`total_xp=0`, `level=1`).
-  - [DONE] New registrations create default active `user_subscriptions` record on `Free` plan.
-- Segment 7: Quick verification pass
-  - [DONE] Browser test register -> login -> logout -> index redirect flow.
-  - [DONE] Browser test guest navbar vs authenticated navbar behavior.
-  - [DONE] Browser test learner account cannot open `admin/*.php` pages.
-  - [DONE] Browser test admin account can open `admin/*.php` pages.
-  - [DONE] Browser test new registration inserts rows in `user_roles`, `user_xp`, and `user_subscriptions`.
-
-### Phase 2 Progress Indicators
-
-- Completion: **100%**
-- Done now: full authentication flow, RBAC restrictions, and default account provisioning verified
-- Remaining: none
-- Next prompt should do: start Phase 3 (Dashboard and Core Read Pages)
-
-### Tasks
-
-- Implement register logic in `register.php`:
-  - Validate fields.
-  - Hash password using `password_hash`.
-  - Insert into `users` table.
-- Implement login logic in `login.php`:
-  - Find user by email.
-  - Verify password using `password_verify`.
-  - Store user session values.
-- Keep `logout.php` to destroy session.
-- Verify `index.php` redirects correctly.
-
-### Output of this phase
-
-- User can register, login, logout.
-- Session-based redirect works.
-
-## Phase 3 - Dashboard and Core Read Pages
-
-<!-- PHASE 3 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 3 Segments and Progress
-
-- Segment 1: Dashboard read implementation (`dashboard.php`)
-  - [DONE] Display logged-in user basic info from `users`.
-  - [DONE] Display current XP and level from `user_xp`.
-  - [DONE] Display enrolled courses from `course_enrollment` + `courses`.
-- Segment 2: Course read implementation (`course.php`)
-  - [DONE] Display available courses list.
-  - [DONE] Display selected course details (`course_id`, `title`, `description`, `difficulty`, `instructor_id`, `created_at`, `is_archived`).
-  - [DONE] Display course modules from `modules`.
-  - [DONE] Display lessons per module from `lessons`.
-- Segment 3: Leaderboard read implementation (`leaderboard.php`)
-  - [DONE] Display ranked users by XP using `users` + `user_xp` join.
-  - [DONE] Display rank, user fields, XP, level, and account status.
-- Segment 4: Shared read helpers and UI
-  - [DONE] Added reusable helper functions in `includes/functions.php` for dashboard/course/leaderboard queries.
-  - [DONE] Added simple table/section styling for readability.
-- Segment 5: Quick verification pass
-  - [DONE] Browser test dashboard shows user info, XP, and enrollments.
-  - [DONE] Browser test course page list + selected course modules/lessons.
-  - [DONE] Browser test leaderboard ordering by XP descending.
-
-### Phase 3 Progress Indicators
-
-- Completion: **100%**
-- Done now: core read pages verified and connected to DB
-- Remaining: none
-- Next prompt should do: start Phase 4 (Enrollment and Progress)
-
-### Tasks
-
-- In `dashboard.php`, display:
-  - User basic info.
-  - Current XP from `user_xp`.
-  - Enrolled courses from `course_enrollment` + `courses`.
-- In `course.php`, show selected course details, modules, and lessons.
-- In `leaderboard.php`, display users ranked by XP.
-
-### Output of this phase
-
-- Core READ screens are visible and connected to DB.
-
-## Phase 4 - Enrollment and Progress
-
-<!-- PHASE 4 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 4 Segments and Progress
-
-- Segment 1: Enrollment action (`enroll.php`)
-  - [DONE] Added enrollment form with course selection.
-  - [DONE] Insert enrollment into `course_enrollment`.
-  - [DONE] Prevent duplicate enrollment for same `user_id + course_id`.
-  - [DONE] Display enrollment list with relevant fields (`enrollment_id`, `course_id`, `enrolled_at`, `completion_status`).
-- Segment 2: Progress page read + update (`progress.php`)
-  - [DONE] Display user progress rows from `user_progress`.
-  - [DONE] Show relevant fields (`progress_id`, `course_id`, `module_id`, `lesson_id`, `challenge_id`, `status`, `completed_at`).
-  - [DONE] Added status update action.
-  - [DONE] Update `completed_at` automatically when status becomes `completed`.
-- Segment 3: Shared helper functions (`includes/functions.php`)
-  - [DONE] Added reusable enrollment/progress helper queries and mutations.
-  - [DONE] Added option list helpers for courses/modules/lessons/challenges.
-- Segment 4: Quick verification pass
-  - [DONE] Browser test new enrollment insertion and duplicate protection.
-  - [DONE] Browser test progress add row and status updates.
-  - [DONE] Browser test `completed_at` value updates correctly.
-
-### Phase 4 Progress Indicators
-
-- Completion: **100%**
-- Done now: enrollment and progress flow verified and connected to DB
-- Remaining: none
-- Next prompt should do: start Phase 5 (Coding Submission and XP)
-
-### Tasks
-
-- Implement enrollment action in `enroll.php`:
-  - Prevent duplicate enrollment.
-  - Insert into `course_enrollment`.
-- Implement progress updates in `progress.php`:
-  - Show current progress rows.
-  - Update status and `completed_at` where needed.
-
-### Output of this phase
-
-- User can enroll in courses.
-- Progress records update correctly.
-
-## Phase 5 - Coding Submission and XP
-
-<!-- PHASE 5 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 5 Segments and Progress
-
-- Segment 1: Submission form (`submit_code.php`)
-  - [DONE] Added challenge selection from `challenges`.
-  - [DONE] Added inputs for `language`, `source_code`, `execution_status`, and `score`.
-  - [DONE] Form posts to `process_submission.php`.
-- Segment 2: Submission processing (`process_submission.php`)
-  - [DONE] Insert into `submissions` with relevant fields (`challenge_id`, `user_id`, `source_code`, `language`, `execution_status`, `score`).
-  - [DONE] Supports statuses: `pending`, `passed`, `failed`, `error`.
-  - [DONE] Shows processing result summary.
-- Segment 3: XP and progress linkage
-  - [DONE] If status is `passed`, awards XP from challenge `xp_reward` to `user_xp`.
-  - [DONE] If status is `passed`, marks related challenge progress as `completed` in `user_progress`.
-  - [DONE] Creates progress row when challenge progress does not exist yet.
-- Segment 4: Shared helpers
-  - [DONE] Added `getChallengeList()` and `getChallengeById()` helpers.
-  - [DONE] Added `submitCode()` helper.
-  - [DONE] Added `markChallengeComplete()` helper.
-- Segment 5: Quick verification pass
-  - [DONE] Code-level navigation smoke audit completed and learner path to enrollment fixed.
-  - [TODO] Browser test submission insert for each status (`pending`, `passed`, `failed`, `error`).
-  - [TODO] Browser test XP increases only when status is `passed`.
-  - [TODO] Browser test progress row becomes `completed` with `completed_at` on pass.
-
-### Phase 5 Progress Indicators
-
-- Completion: **90%**
-- Done now: submission + processing + XP/progress linkage are implemented
-- Remaining: browser verification and minor display adjustments (if needed)
-- Next prompt should do: run Phase 5 test checklist and close to 100%
-
-### Tasks
-
-- Build submission form in `submit_code.php`.
-- In `process_submission.php`:
-  - Insert submission into `submissions`.
-  - Set status (`pending`, `passed`, `failed`, `error`).
-  - If passed, call XP update logic.
-  - Update related progress row to completed.
-
-### Output of this phase
-
-- Submission flow updates `submissions`, `user_xp`, and `user_progress`.
-
-## Phase 5.5 - XP Logic Isolation
-
-<!-- PHASE 5.5 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 5.5 Segments and Progress
-
-- Segment 1: Reusable XP helper
-  - [DONE] `awardXP(user_id, xp)` is centralized in `includes/functions.php`.
-- Segment 2: Submission flow integration
-  - [DONE] `process_submission.php` calls `awardXP()` only when submission status is `passed`.
-- Segment 3: Quick verification pass
-  - [TODO] Browser test confirms XP does not change for `pending`, `failed`, and `error`.
-  - [TODO] Browser test confirms XP increases for `passed` using challenge `xp_reward`.
-
-### Phase 5.5 Progress Indicators
-
-- Completion: **90%**
-- Done now: XP logic is isolated and integrated in submission flow
-- Remaining: browser verification for XP edge cases
-- Next prompt should do: run XP behavior tests and close Phase 5.5 to 100%
-
-### Tasks
-
-- Move XP logic into a reusable function:
-  - awardXP(user_id, xp)
-- Call this function from submission flow
-
-### Output
-
-- XP system is reusable and consistent
-
-## Phase 6 - Subscription and Payment Simulation
-
-<!-- PHASE 6 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 6 Segments and Progress
-
-- Segment 1: Subscription plan display (`subscription.php`)
-  - [DONE] Loaded plans from `subscription_plans`.
-  - [DONE] Displayed relevant fields (`plan_id`, `plan_name`, `price`, `billing_cycle`).
-  - [DONE] Added select-plan action to payment simulation page.
-- Segment 2: Current user subscription view (`subscription.php`)
-  - [DONE] Displayed latest user subscription with relevant fields (`subscription_id`, `plan_id`, `start_date`, `end_date`, `status`).
-  - [DONE] Joined plan details for readable display (`plan_name`, `price`, `billing_cycle`).
-- Segment 3: Payment simulation (`payment.php`)
-  - [DONE] Added selected-plan flow and payment form.
-  - [DONE] Simulated payment insertion in `payments` with relevant fields (`user_id`, `subscription_id`, `amount`, `payment_method`, `payment_status`, `paid_at`).
-  - [DONE] Set payment status to `completed` for simulation path.
-- Segment 4: Subscription create/update linkage
-  - [DONE] Added reusable `upsertUserSubscription()` to create or update `user_subscriptions`.
-  - [DONE] Set relevant subscription fields (`user_id`, `plan_id`, `start_date`, `end_date`, `status`).
-  - [DONE] Ensured payment references valid `subscription_id`.
-- Segment 5: Shared helpers (`includes/functions.php`)
-  - [DONE] Added `getSubscriptionPlans()`.
-  - [DONE] Added `getSubscriptionPlanById()`.
-  - [DONE] Added `getUserLatestSubscription()`.
-  - [DONE] Added `createPaymentRecord()`.
-- Segment 6: Quick verification pass
-  - [DONE] Browser test plan list renders from DB seed data.
-  - [DONE] Browser test payment creates a new `payments` row.
-  - [DONE] Browser test subscription row is created/updated correctly.
-
-### Phase 6 Progress Indicators
-
-- Completion: **100%**
-- Done now: subscription/payment simulation is implemented, verified, and DB-connected
-- Remaining: none
-- Next prompt should do: start Phase 7 (Generic CRUD Actions)
-
-### Tasks
-
-- Show plans in `subscription.php` from `subscription_plans`.
-- In `payment.php`:
-  - Simulate payment creation in `payments`.
-  - Create or update `user_subscriptions`.
-  - Set status values correctly.
-
-### Output of this phase
-
-- Basic monetization simulation works.
-
-## Phase 7 - Generic CRUD Actions
-
-<!-- PHASE 7 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 7 Segments and Progress
-
-- Segment 1: Create action (`actions/create.php`)
-  - [DONE] Insert a record using a prepared statement.
-  - [DONE] Accept only whitelisted tables and columns.
-  - [DONE] Reject unknown fields before running SQL.
-
-## Project Maintenance
-
-### Automated checks and QA
-
-- [DONE] Added lightweight PHP syntax checker: `scripts/check_php_syntax.php`.
-- [DONE] Added runtime smoke checks: `scripts/run_smoke_checks.php` (uploads dir, essential includes, DB connection).
-- [DONE] Manual QA checklist added: `QA_MANUAL.md`.
-- [DONE] Deploy checklist added: `PREPARE_DEPLOY.md`.
-
-Run the scripts above locally before deploying or merging to ensure basic health of the codebase.
-- Segment 2: Update action (`actions/update.php`)
-  - [DONE] Update a record using the primary key.
-  - [DONE] Accept only whitelisted tables and columns.
-  - [DONE] Reject unknown fields before running SQL.
-- Segment 3: Delete action (`actions/delete.php`)
-  - [DONE] Delete a record using the primary key.
-  - [DONE] Accept only whitelisted tables.
-  - [DONE] Block raw table or column input.
-- Segment 4: Shared whitelist helpers (`includes/functions.php`)
-  - [DONE] Add reusable whitelist definitions for tables and columns.
-  - [DONE] Add centralized createRecord/updateRecord/deleteRecord helpers.
-  - [DONE] Keep CRUD SQL out of individual admin pages.
-- Segment 5: Quick verification pass
-  - [DONE] Confirm create/update/delete helpers pass PHP syntax validation.
-  - [DONE] Confirm unknown tables and fields are rejected by the whitelist layer.
-  - [DONE] Confirm admin pages can call the shared CRUD helpers.
-
-### Phase 7 Progress Indicators
-
-- Completion: **100%**
-- Done now: centralized CRUD action handling is implemented and validated
-- Remaining: none
-- Next prompt should do: start Phase 8 (Admin CRUD Pages by Group)
-
-### Rules
-
-- Each request must include:
-  - table name
-  - allowed fields
-- NEVER allow raw table/column input from user
-
-### Required structure
-
-- actions/create.php
-  - Insert record using prepared statement
-- actions/update.php
-  - Update record using primary key
-- actions/delete.php
-  - Delete record using primary key
-
-### Required function format
-
-function createRecord($table, $data)
-function updateRecord($table, $id, $data)
-function deleteRecord($table, $id)
-
-### Safety rules
-
-- Use whitelist for tables
-- Use whitelist for columns
-- Reject unknown fields
-
-### Output of this phase
-
-- All admin pages reuse centralized CRUD logic
-- No duplicated SQL across files
-
-## Phase 8 - Admin CRUD Pages (By Group)
-
-<!-- PHASE 8 PROGRESS TRACKER (Update this block every prompt) -->
-<!-- Status legend: [DONE] complete | [IN-PROGRESS] currently doing | [TODO] not started -->
-
-### Phase 8 Segments and Progress
-
-- Group A: User + Role
-  - [DONE] `admin/users_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/roles_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/user_roles_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/instructor_requests_crud.php` (CREATE / READ / UPDATE / DELETE)
-
-- Group B: Learning Content
-  - [DONE] `admin/courses_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/modules_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/lessons_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/challenges_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/testcases_crud.php` (CREATE / READ / UPDATE / DELETE)
-
-- Group C: Learning Activity
-  - [DONE] `admin/submissions_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/user_xp_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/leaderboard_crud.php` (READ / UPDATE / DELETE — leaderboard is mostly read)
-  - [DONE] `admin/enrollment_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/progress_crud.php` (CREATE / READ / UPDATE / DELETE)
-
-- Group D: Monetization + Notifications
-  - [DONE] `admin/subscriptions_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/payments_crud.php` (CREATE / READ / UPDATE / DELETE)
-  - [DONE] `admin/notifications_crud.php` (CREATE / READ / UPDATE / DELETE)
-
-### For each admin page, implemented
-
-- Create form (whitelisted fields, server-side validation).
-- Records table (paginated simple read view).
-- Update action (edit row using centralized `actions/update.php`).
-- Delete action (soft or hard delete via `actions/delete.php` per table rules).
-- Success/error message display (session flash messages shown in admin template).
-
-### Quick verification pass
-
-- [DONE] Basic manual browser checks for create/read/update/delete flows across admin pages.
-- [DONE] Role-based access control enforced for admin pages via `includes/auth.php` helpers.
-- [DONE] Admin pages use centralized CRUD helpers in `includes/functions.php` and `actions/*`.
-
-### Phase 8 Progress Indicators
-
-- Completion: **100%**
-- Done now: All admin CRUD pages implemented and manually smoke-tested
-- Remaining: Minor UI polish and automated tests (optional)
-- Next prompt should do: start Phase 9 (Validation, Security, and Cleanup)
-
-### Tasks
-
-- Ensure each admin page calls `requireAuth()` and checks admin role.
-- Wire create/update/delete forms to `actions/create.php`, `actions/update.php`, `actions/delete.php` with proper whitelist arrays.
-- Escape output with `htmlspecialchars()` in table renderers.
-- Display session flash messages for success/error after actions.
-
-### Output of this phase
-
-- Full CRUD coverage across required tables, accessible from Admin Panel, and protected by role checks.
-
-## Phase 9 - Validation, Security, and Cleanup
-
-### Tasks
-
-- Validate all `$_POST` inputs.
-- Escape output with `htmlspecialchars`.
-- Use prepared statements everywhere.
-- Add simple role checks for admin pages.
-- Standardize page layout and navigation links.
-
-### Output of this phase
-
-- Cleaner, safer, and more consistent app.
-
-## Phase 10 - Final Testing Checklist
-
-### Functional checks
-
-- Register/Login/Logout works.
-- Dashboard displays correct user data.
-- Enrollment and progress update correctly.
-- Submission updates XP and progress.
-- Leaderboard ordering is correct.
-- Subscription/payment flow stores records.
-- Every admin page supports create/read/update/delete.
-
-### Database checks
-
-- Foreign key relations stay valid.
-- No duplicate enrollment.
-- No SQL errors in normal flow.
-
-### Demo readiness checks
-
-- Navigation is clear.
-- No broken links.
-- No blank pages.
-- Error messages are understandable.
-
-## Prompting Template for Future Work
-
-Use this prompt pattern when asking for help per file:
-
-1. Target file: (example `admin/users_crud.php`)
-2. Goal: (example implement CREATE + READ first)
-3. Fields needed: (list table columns)
-4. Rules: (foreign keys, validation)
-5. Done when: (what should work)
-
-Example:
-
-"Implement CREATE and READ in `admin/users_crud.php` using prepared statements. Keep it beginner-friendly and explain the code in simple terms."
-
-## Notes
-
-- Keep solutions simple first, then improve.
-- Avoid building all pages at once.
-- Finish one working flow before moving to the next.
-
-## Demo Flow Script (Presentation Guide)
-
-1. Register a new user
-2. Login
-3. View dashboard (initial state)
-4. Enroll in a course
-5. Submit code (simulate pass)
-6. Show XP increase
-7. Show progress update
-8. Open leaderboard (rank changes)
-9. Open admin panel
-10. Perform CRUD (create/edit/delete record)
-
-Goal: Show cause → database change → visible result
+Production-ready baseline as of May 2026.
+
+## Purpose
+
+This document records implementation status, deployment expectations, and prioritized follow-up work for the Kody platform.
+
+## Project Snapshot
+
+| Area | Status | Notes |
+| ---- | ------ | ----- |
+| Authentication and RBAC | Complete | Register, login, logout, role checks active |
+| Learning workflows | Complete | Courses, enrollment, submissions, progress active |
+| Gamification | Complete | XP and level updates active |
+| Subscriptions and payments | Complete | Plan selection and payment recording active |
+| Admin CRUD coverage | Complete | Core schema surfaced in admin modules |
+| Documentation set | Complete | README plus audit reports updated |
+| Dark UI migration | Complete | Global and admin styles modernized |
+
+## Architecture Baseline
+
+| Layer | Technology | Current Baseline |
+| ----- | ---------- | ---------------- |
+| Frontend | HTML, CSS, JavaScript | Responsive dark UI with shared styles |
+| Backend | PHP | Modular includes and helper-based query access |
+| Database | MySQL | 19-table schema with relational constraints |
+| Admin | PHP generic CRUD | Module-to-table mapping in includes/functions.php |
+
+## Implementation Phases
+
+### Phase 0 Environment and Schema
+
+- Environment setup completed.
+- Schema deployment from database.sql completed.
+- Optional seed flow available via seed_phase_0_5_rerun_safe.sql.
+
+### Phase 1 Shared Core and Navigation
+
+- includes/db.php, includes/auth.php, includes/functions.php established.
+- Shared header and footer integration established.
+- Role-aware navigation behavior implemented.
+
+### Phase 2 Authentication and Role Access
+
+- register.php and login.php workflows completed.
+- Password hashing and verification implemented.
+- Role assignment on registration implemented.
+- Session-gated access for admin pages implemented.
+
+### Phase 3 Core User Pages
+
+- dashboard.php, course.php, leaderboard.php integrated with live data.
+- Course and content browsing with joins and helper functions active.
+
+### Phase 4 Enrollment and Progress
+
+- enroll.php flow completed.
+- progress.php create and update paths completed.
+- Submission-related progress updates active.
+
+### Phase 5 Admin CRUD
+
+- Generic CRUD engine connected to module wrappers.
+- Broad schema coverage enabled in admin panel.
+- Additional modules added for user_subscriptions and moderation_reviews.
+
+### Phase 6 UI Modernization
+
+- Global style system updated to dark theme tokens.
+- Admin style layer updated for consistency.
+- Button, input, table, and hover states normalized.
+- Scroll-position retention behavior added in assets/js/app.js.
+
+### Phase 7 Schema Usage Audit
+
+- Field and table usage reports generated.
+- Runtime vs admin-only integration gaps identified.
+- Roadmap recommendations documented in audit files.
+
+## Functional Baseline
+
+### User-side workflows
+
+1. Register and login.
+2. Browse courses and enroll.
+3. Access modules and lessons.
+4. Submit challenges.
+5. Track progress and XP.
+6. Manage subscription and payment path.
+
+### Admin-side workflows
+
+1. Manage users, roles, courses, modules, lessons, and challenges.
+2. Manage submissions, enrollment, progress, and XP.
+3. Manage subscription plans, user subscriptions, and payments.
+4. Access moderation and notifications CRUD modules.
+
+## Security Baseline
+
+- Password hashing is enabled.
+- Prepared statements are used in query paths.
+- Session-based auth checks are active.
+- Role-based access restrictions are active for admin endpoints.
+
+## Database Baseline
+
+### Runtime-strong tables
+
+- users, roles, user_roles
+- courses, modules, lessons, challenges
+- course_enrollment, user_progress, submissions
+- user_xp, subscription_plans, user_subscriptions, payments
+
+### Partial or roadmap-depth tables
+
+- challenge_testcases (not fully wired into evaluation path)
+- moderation_reviews (admin CRUD available, limited user flow)
+- notifications (admin CRUD available, limited user flow)
+- leaderboard (runtime ranking is computed from user_xp)
+
+## Deployment Baseline
+
+### Requirements
+
+- PHP 7.4 or newer
+- MySQL 8.0 or newer
+- Web server stack such as Apache or Nginx
+
+### Setup sequence
+
+1. Import database.sql.
+2. Optionally import seed_phase_0_5_rerun_safe.sql.
+3. Configure database credentials in kody/includes/db.php.
+4. Run local syntax and smoke checks when PHP CLI is available.
+
+## Validation Baseline
+
+### Checks
+
+- scripts/check_php_syntax.php
+- scripts/run_smoke_checks.php
+
+### Current note
+
+If PHP is unavailable in shell, rely on IDE diagnostics and browser runtime verification.
+
+## Known Gaps and Next Priorities
+
+### High
+
+1. Integrate challenge_testcases into submission validation logic.
+2. Decide computed vs persisted leaderboard strategy.
+3. Expand moderation and notification workflows if retained in product scope.
+
+### Medium
+
+1. Surface audit timestamps in relevant admin views.
+2. Implement or remove roadmap fields such as users.google_id and users.profile_picture.
+
+### Low
+
+1. Keep generated reports lint-clean during future updates.
+2. Maintain strict sync between admin module map and schema evolution.
+
+## Supporting Docs
+
+- README.md
+- ANALYSIS_EXECUTIVE_SUMMARY.md
+- DATABASE_FIELD_USAGE_REPORT.md
+- QUICK_REFERENCE_UNUSED_FIELDS.md
+- TABLE_FILE_INTERACTION_MATRIX.md
+- AUDIT_AND_MODERNIZATION_SUMMARY.md
+
+## Conclusion
+
+Kody is stable for current LMS workflows and has a clear path for roadmap-level enhancements. The baseline is suitable for maintenance and iterative delivery.
