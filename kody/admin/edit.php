@@ -45,9 +45,16 @@ if (!$row) {
     </aside>
 
     <div class="admin-main">
-        <h2>Edit <?php echo htmlspecialchars($table); ?> #<?php echo htmlspecialchars($row[$pk]); ?></h2>
+        <div class="page-hero admin-hero">
+            <h2>Edit <?php echo htmlspecialchars($table); ?> #<?php echo htmlspecialchars($row[$pk]); ?></h2>
+            <p>Update the selected record while keeping system-managed fields read-only.</p>
+        </div>
 
-        <section>
+        <section class="subtle-panel">
+            <div class="section-heading">
+                <h3>Edit form</h3>
+                <span class="badge info">ID <?php echo htmlspecialchars($row[$pk]); ?></span>
+            </div>
             <form method="post" action="../actions/update.php" enctype="multipart/form-data">
                 <input type="hidden" name="module" value="<?php echo htmlspecialchars($crud_module); ?>">
                 <input type="hidden" name="table" value="<?php echo htmlspecialchars($table); ?>">
@@ -58,6 +65,7 @@ if (!$row) {
                     <?php
                     foreach ($definition['columns'] as $col) {
                         if ($col === $pk) continue;
+                        if (isCrudAutoManagedColumn($table, $col)) continue;
                         if ($table === 'users' && $col === 'password_hash') {
                             echo '<label>Password<input type="password" name="password_hash" placeholder="Leave blank to keep current password"></label>';
                             continue;
@@ -67,7 +75,9 @@ if (!$row) {
                     ?>
                 </div>
 
-                <button type="submit">Save changes</button>
+                <div class="page-actions mt-1">
+                    <button type="submit" class="primary">Save changes</button>
+                </div>
             </form>
         </section>
 

@@ -17,6 +17,9 @@ $counts = [
     'courses' => getCount($pdo, 'courses'),
     'submissions' => getCount($pdo, 'submissions'),
     'payments' => getCount($pdo, 'payments'),
+    'notifications' => getCount($pdo, 'notifications'),
+    'requests' => getCount($pdo, 'instructor_requests'),
+    'reviews' => getCount($pdo, 'moderation_reviews'),
 ];
 
 // recent submissions
@@ -53,29 +56,49 @@ $recent = $recentStmt->fetchAll();
     </aside>
 
     <div class="admin-main">
-        <h2>Admin Dashboard</h2>
+        <div class="page-hero admin-hero">
+            <h2>Admin Dashboard</h2>
+            <p>Monitor system health, review key data, and manage schema-backed workflows from one place.</p>
+        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="value"><?php echo $counts['users']; ?></div>
-                <div class="label">Users</div>
+        <div class="card-grid mt-1">
+            <div class="info-card">
+                <div class="eyebrow">Users</div>
+                <div class="metric"><?php echo $counts['users']; ?></div>
+                <div class="card-meta">Registered accounts</div>
             </div>
-            <div class="stat-card">
-                <div class="value"><?php echo $counts['courses']; ?></div>
-                <div class="label">Courses</div>
+            <div class="info-card">
+                <div class="eyebrow">Courses</div>
+                <div class="metric"><?php echo $counts['courses']; ?></div>
+                <div class="card-meta">Course records</div>
             </div>
-            <div class="stat-card">
-                <div class="value"><?php echo $counts['submissions']; ?></div>
-                <div class="label">Submissions</div>
+            <div class="info-card">
+                <div class="eyebrow">Submissions</div>
+                <div class="metric"><?php echo $counts['submissions']; ?></div>
+                <div class="card-meta">Code submissions</div>
             </div>
-            <div class="stat-card">
-                <div class="value"><?php echo $counts['payments']; ?></div>
-                <div class="label">Payments</div>
+            <div class="info-card">
+                <div class="eyebrow">Payments</div>
+                <div class="metric"><?php echo $counts['payments']; ?></div>
+                <div class="card-meta">Payment rows</div>
+            </div>
+            <div class="info-card">
+                <div class="eyebrow">Notifications</div>
+                <div class="metric"><?php echo $counts['notifications']; ?></div>
+                <div class="card-meta">Inbox entries</div>
+            </div>
+            <div class="info-card">
+                <div class="eyebrow">Requests</div>
+                <div class="metric"><?php echo $counts['requests']; ?></div>
+                <div class="card-meta">Instructor requests</div>
             </div>
         </div>
 
-        <section>
-            <h3>Recent Submissions</h3>
+        <section class="subtle-panel mt-1">
+            <div class="section-heading">
+                <h3>Recent Submissions</h3>
+                <span class="badge info"><?php echo (int) count($recent); ?> latest</span>
+            </div>
             <div class="table-responsive">
             <table class="admin-table">
                 <thead>
@@ -98,6 +121,20 @@ $recent = $recentStmt->fetchAll();
                 <?php endif; ?>
                 </tbody>
             </table>
+            </div>
+        </section>
+
+        <section class="subtle-panel mt-1">
+            <div class="section-heading">
+                <h3>Quick Actions</h3>
+                <span class="badge success">Shortcuts</span>
+            </div>
+            <div class="page-actions mt-075">
+                <a class="button-link primary" href="users_crud.php">Manage Users</a>
+                <a class="button-link" href="notifications_crud.php">Manage Notifications</a>
+                <a class="button-link" href="instructor_requests_crud.php">Review Requests</a>
+                <a class="button-link" href="moderation_reviews_crud.php">Moderation Reviews</a>
+                <a class="button-link" href="../notifications.php">Open User Inbox</a>
             </div>
         </section>
 

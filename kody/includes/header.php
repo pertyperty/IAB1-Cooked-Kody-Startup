@@ -9,6 +9,8 @@ if (session_status() === PHP_SESSION_NONE) {
 $basePath = '/kody';
 $isLoggedIn = checkAuth();
 $isUserAdmin = isAdmin();
+$currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+$unreadNotificationCount = $currentUserId > 0 ? getUnreadNotificationCount($currentUserId) : 0;
 
 // detect current script for breadcrumb/title hints
 $currentPath = $_SERVER['REQUEST_URI'] ?? '';
@@ -44,6 +46,8 @@ $currentScript = basename($_SERVER['PHP_SELF'] ?? '');
                     <a class="btn btn-ghost" href="<?php echo $basePath; ?>/submit_code.php">Submit Code</a>
                     <a class="btn btn-ghost" href="<?php echo $basePath; ?>/progress.php">Progress</a>
                     <a class="btn btn-ghost" href="<?php echo $basePath; ?>/subscription.php">Subscription</a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/notifications.php">Notifications<?php if ($unreadNotificationCount > 0): ?> (<?php echo (int) $unreadNotificationCount; ?>)<?php endif; ?></a>
+                    <a class="btn btn-ghost" href="<?php echo $basePath; ?>/instructor_request.php">Instructor Request</a>
                     <a class="btn btn-ghost" href="<?php echo $basePath; ?>/leaderboard.php">Leaderboard</a>
                 </div>
             <?php endif; ?>

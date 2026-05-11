@@ -38,6 +38,8 @@ echo '<div class="admin-main">';
 
 // Build create form
 echo '<section><h3>Create</h3>';
+echo '<div class="subtle-panel">';
+echo '<div class="section-heading"><h3>Create</h3><span class="badge info">New record</span></div>';
 echo '<form method="post" action="../actions/create.php" enctype="multipart/form-data">';
 echo '<input type="hidden" name="module" value="' . htmlspecialchars($crud_module) . '">';
 echo '<input type="hidden" name="table" value="' . htmlspecialchars($table) . '">';
@@ -46,13 +48,17 @@ echo '<div class="form-grid">';
 
 foreach ($definition['columns'] as $col) {
     // skip primary key if present in columns
-    if ($col === $definition['primary_key']) continue;
+    if ($col === $definition['primary_key'] || isCrudAutoManagedColumn($table, $col)) continue;
     echo renderCrudField($table, $col, null);
 }
 
 echo '</div>';
-echo '<button type="submit">Create</button>';
-echo '</form></section>';
+echo '<div class="page-actions">';
+echo '<button type="submit" class="primary">Create</button>';
+echo '</div>';
+echo '</form>';
+echo '</div>'; // .subtle-panel
+echo '</section>';
 
 // Read table
 echo '<section><h3>Records</h3>';
@@ -90,15 +96,20 @@ $stmt->execute();
 $rows = $stmt->fetchAll();
 
 if (empty($rows)) {
+    echo '<div class="subtle-panel">';
     echo '<p>No records found.</p>';
+    echo '</div>';
 } else {
     // search form
-    echo '<form method="get" action="' . htmlspecialchars(basename($_SERVER['PHP_SELF'] ?? '')) . '" class="mb-008" role="search" aria-label="Search records">';
+    echo '<div class="subtle-panel">';
+    echo '<div class="section-heading"><h3>Records</h3><span class="badge success">' . (int) $total . ' total</span></div>';
+    echo '<form method="get" action="' . htmlspecialchars(basename($_SERVER['PHP_SELF'] ?? '')) . '" class="page-actions" role="search" aria-label="Search records">';
     echo '<input type="hidden" name="module" value="' . htmlspecialchars($crud_module) . '">';
-    echo '<input type="text" name="q" placeholder="Search..." value="' . htmlspecialchars($q) . '" aria-label="Search records" class="mr-06">';
-    echo '<button type="submit" aria-label="Submit search">Search</button>';
+    echo '<input type="text" name="q" placeholder="Search..." value="' . htmlspecialchars($q) . '" aria-label="Search records" style="flex: 1; max-width: 200px;">';
+    echo '<button type="submit" class="primary" aria-label="Submit search">Search</button>';
     echo '</form>';
 
+    echo '<div class="table-responsive">';
     echo '<table class="admin-table" role="table"><caption>' . htmlspecialchars(ucwords(str_replace(['_','-','crud.php'], [' ',' ',''], $crud_module))) . ' records</caption><thead><tr>';
     echo '<th scope="col">' . htmlspecialchars($pk) . '</th>';
     foreach ($definition['columns'] as $col) {
@@ -118,12 +129,20 @@ if (empty($rows)) {
                 $opts = getForeignKeyOptions($col);
                 $display = isset($opts[$val]) ? $opts[$val] : (string)$val;
             } else {
-                $display = (string)$val;
+                $display = (string) formatCrudDisplayValue($table, $col, $val);
             }
 
             // truncate long text
             if (is_string($display) && strlen($display) > 140) {
                 $display = substr($display, 0, 137) . '...';
+            }
+
+            if ($table === 'leaderboard' && $col === 'rank_position' && empty($display)) {
+                $display = 'Computed';
+            }
+
+            if ($table === 'notifications' && $col === 'is_read') {
+                $display = ((int) $val === 1) ? 'Yes' : 'No';
             }
 
             echo '<td>' . htmlspecialchars($display) . '</td>';
@@ -147,25 +166,28 @@ if (empty($rows)) {
     }
 
     echo '</tbody></table>';
+    echo '</div>'; // .table-responsive
+    echo '</div>'; // .subtle-panel
+}
 
-    // pagination
-    $totalPages = (int) ceil($total / $perPage);
-    if ($totalPages > 1) {
-        echo '<div class="pagination">';
-        for ($p = 1; $p <= $totalPages; $p++) {
-            if ($p === $page) {
-                echo '<span class="current">' . $p . '</span>';
-            } else {
-                $link = '?module=' . urlencode($crud_module) . '&page=' . $p;
-                if (!empty($q)) $link .= '&q=' . urlencode($q);
-                echo '<a href="' . $link . '">' . $p . '</a>';
-            }
+// pagination
+$totalPages = (int) ceil($total / $perPage);
+if ($totalPages > 1) {
+    echo '<div class="pagination">';
+    for ($p = 1; $p <= $totalPages; $p++) {
+        if ($p === $page) {
+            echo '<span class="current">' . $p . '</span>';
+        } else {
+            $link = '?module=' . urlencode($crud_module) . '&page=' . $p;
+            if (!empty($q)) $link .= '&q=' . urlencode($q);
+            echo '<a href="' . $link . '">' . $p . '</a>';
         }
-        echo '</div>';
     }
+    echo '</div>';
 }
 
 echo '</section>';
+echo '</div>';
 
 // Close main and layout
 echo '</div>'; // .admin-main

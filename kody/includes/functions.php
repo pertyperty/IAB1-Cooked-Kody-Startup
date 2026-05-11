@@ -1272,6 +1272,38 @@ function getEnumOptionsForColumn($table, $column)
     return $options;
 }
 
+function isCrudAutoManagedColumn($table, $column)
+{
+    $autoColumns = [
+        'users' => ['created_at'],
+        'user_roles' => ['assigned_at'],
+        'instructor_requests' => ['requested_at', 'reviewed_at'],
+        'courses' => ['created_at'],
+        'modules' => ['created_at'],
+        'challenges' => ['created_at'],
+        'submissions' => ['submitted_at'],
+        'user_progress' => ['completed_at'],
+        'moderation_reviews' => ['reviewed_at'],
+        'payments' => ['paid_at'],
+        'notifications' => ['created_at'],
+    ];
+
+    return !empty($autoColumns[$table]) && in_array($column, $autoColumns[$table], true);
+}
+
+function formatCrudDisplayValue($table, $column, $value)
+{
+    if ($value === null || $value === '') {
+        return '';
+    }
+
+    if (isCrudAutoManagedColumn($table, $column) && is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2} /', $value)) {
+        return $value;
+    }
+
+    return $value;
+}
+
 // Render a form field for a given table and column (used by admin UI)
 function renderCrudField($table, $column, $value = null)
 {
@@ -1330,6 +1362,12 @@ function renderCrudField($table, $column, $value = null)
 
     if ($column === 'password' || $column === 'password_hash') {
         $html .= '<label>' . htmlspecialchars($column) . '<input type="password" name="' . htmlspecialchars($column) . '"></label>';
+        return $html;
+    }
+
+    if (isCrudAutoManagedColumn($table, $column)) {
+        $displayValue = htmlspecialchars((string) $value);
+        $html .= '<label>' . htmlspecialchars($column) . '<input type="text" name="' . htmlspecialchars($column) . '" value="' . $displayValue . '" readonly></label>';
         return $html;
     }
 

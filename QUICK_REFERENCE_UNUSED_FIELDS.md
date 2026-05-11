@@ -6,30 +6,35 @@
 | ----- | ----- | ---- | ------ | ----------------- |
 | users | google_id | VARCHAR(50) | Unused | login, register, dashboard, leaderboard |
 | users | profile_picture | VARCHAR(255) | Unused | login, register, dashboard, leaderboard |
-| user_roles | assigned_at | DATETIME | Unused in runtime UX | login, register |
-| instructor_requests | requested_at | DATETIME | Unused in runtime UX | admin CRUD only |
-| instructor_requests | reviewed_at | DATETIME | Unused in runtime UX | admin CRUD only |
-| leaderboard | rank_position | INT | Unused | leaderboard table not queried |
+| user_roles | assigned_at | DATETIME | ✅ Implemented | login, register, admin roles CRUD |
+| instructor_requests | requested_at | DATETIME | ✅ Implemented | instructor_request.php, admin CRUD, functions.php |
+| instructor_requests | reviewed_at | DATETIME | ✅ Implemented | instructor_request.php, admin CRUD, functions.php |
+| leaderboard | rank_position | INT | ✅ Implemented | leaderboard.php, functions.php (updateLeaderboardRank) |
+| notifications | * | 5 fields | ✅ Implemented | notifications.php, header.php, dashboard.php, admin CRUD |
+| moderation_reviews | * | 6 fields | ✅ Exposed | admin moderation_reviews CRUD, functions.php |
 
 ## Underused or Unused Tables
 
 | Table | Fields | Status | Recommendation |
 | ----- | ------ | ------ | -------------- |
-| moderation_reviews | 6 | Not queried by workflows | Remove or implement moderation flow |
-| notifications | 5 | Not queried by workflows | Remove or implement notification flow |
-| challenge_testcases | 4 | Partially integrated | Wire into submission validation |
-| leaderboard | 3 | Bypassed at runtime | Keep computed model or persist rankings |
+| moderation_reviews | 6 | ✅ Exposed in admin CRUD | Ready for moderation workflow implementation |
+| notifications | 5 | ✅ Full user-facing implementation | Active in notifications.php, header, dashboard |
+| challenge_testcases | 4 | Partially integrated | Wire into submission validation (requires Judge0) |
+| leaderboard | 3 | ✅ Rank position persisted | Populated via updateLeaderboardRank() in functions.php |
 
 ## Practical Implementation Status Notes
 
-| Area | What Exists Now | Why It Is Partial | Integration Needed |
-| ---- | --------------- | ----------------- | ------------------ |
-| Code execution validation | submissions and challenge_testcases schema, plus submit/process pages | Runtime does not evaluate solutions against stored testcases using sandbox output | Judge0 (or internal execution sandbox) |
-| Payments lifecycle | payments, user_subscriptions, and local checkout flow | Current flow is app-local and not provider-webhook reconciled | Xendit API and webhook events |
-| OAuth account link | users.google_id column | Login/register currently email/password only | OAuth provider callback mapping |
-| Profile images | users.profile_picture column | No upload/storage/display pipeline yet | Storage service plus upload endpoint |
-| Notifications | notifications table and admin CRUD | No full user-facing inbox flow yet | No external API required |
-| Moderation reviews | moderation_reviews table and admin CRUD | No full moderator queue-to-decision flow in user runtime | No external API required |
+| Area | What Exists Now | Status | Integration Needed |
+| ---- | --------------- | ------ | ------------------ |
+| Code execution validation | submissions and challenge_testcases schema, plus submit/process pages | Partial - schema ready but runtime does not evaluate solutions | Judge0 (or internal execution sandbox) |
+| Payments lifecycle | payments, user_subscriptions, and local checkout flow | Partial - app-local flow works but not provider-reconciled | Xendit API and webhook events |
+| OAuth account link | users.google_id column | Unused - login/register currently email/password only | OAuth provider callback mapping |
+| Profile images | users.profile_picture column | Unused - no upload/storage/display pipeline yet | Storage service plus upload endpoint |
+| Notifications | notifications table and admin CRUD + notifications.php | ✅ Complete - full user-facing inbox with read/unread tracking | Production ready |
+| Moderation reviews | moderation_reviews table, admin CRUD, functions.php | ✅ Exposed - admin interface ready for moderator workflow | Ready for moderator action implementation |
+| Instructor requests | instructor_requests table, instructor_request.php, admin CRUD | ✅ Complete - full learner submission and admin review workflow | Production ready |
+| Leaderboard ranking | leaderboard table with rank_position, functions.php helper | ✅ Complete - ranks now persisted via updateLeaderboardRank() | Production ready |
+| User roles audit trail | user_roles.assigned_at timestamp | ✅ Complete - displayed in admin roles CRUD | Visible in admin UI |
 
 ## Table Query Frequency Snapshot
 
@@ -46,11 +51,11 @@
 | lessons | 3+ files | 3+ queries | Used |
 | subscription_plans | 3+ files | 3+ queries | Used |
 | user_subscriptions | 3+ files | 4+ queries | Used |
-| payments | 2+ files | 2+ queries | Used |
-| roles | 3+ files | 3+ queries | Used |
-| user_roles | 3+ files | 3+ queries | Used |
-| instructor_requests | admin only | 1 query | Minimal |
-| moderation_reviews | none | 0 queries | Unused |
+| notifications | 3+ files | 4+ queries | ✅ Now active in notifications.php, header, dashboard |
+| instructor_requests | 2+ files | 3+ queries | ✅ Now active in instructor_request.php, admin CRUD |
+| moderation_reviews | admin + functions | 2+ queries | ✅ Now exposed in admin CRUD |
+| leaderboard | 2+ files | 2+ queries | ✅ Now populated via rank_position updates |
+| challenge_testcases | none | 0 direct queries | Awaiting Judge0 integration |
 | notifications | none | 0 queries | Unused |
 | challenge_testcases | none | 0 direct queries | Unused at runtime |
 | leaderboard | none | 0 direct queries | Bypassed |

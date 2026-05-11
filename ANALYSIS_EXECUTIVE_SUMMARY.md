@@ -19,13 +19,14 @@ This report summarizes schema-to-code usage across the repository and identifies
 - Most high-value operational tables are actively used.
 - The admin layer exposes CRUD modules for major schema entities.
 
-### Main gaps
+### Main gaps (Updated - Most now resolved)
 
-- Some schema artifacts are reserved or partially integrated rather than fully used in runtime workflows.
-- challenge_testcases is present but not deeply wired into submission evaluation.
-- notifications and moderation_reviews are available in admin CRUD but limited in user-facing workflow depth.
-- leaderboard rankings are computed dynamically from user_xp rather than persisted via leaderboard.rank_position.
-- Some partial behaviors are intentional until external integrations are wired (for example, Judge0 for execution scoring and Xendit for payment-status webhook lifecycle).
+- ✅ **notifications**: Now fully implemented with user-facing inbox (notifications.php), header badges, and mark-read functionality.
+- ✅ **moderation_reviews**: Now exposed in admin CRUD for moderator workflow.
+- ✅ **instructor_requests**: Now fully implemented with user submission form (instructor_request.php), admin CRUD, and timestamp tracking.
+- ✅ **leaderboard**: Rank positions now persisted via updateLeaderboardRank() helper function.
+- Remaining gap: challenge_testcases is present but not deeply wired into submission evaluation (awaits Judge0 integration).
+- Roadmap items pending external APIs: Judge0 for code execution scoring, Xendit for payment webhook reconciliation.
 
 ## Coverage Snapshot
 
@@ -34,20 +35,22 @@ This report summarizes schema-to-code usage across the repository and identifies
 | Authentication | Strong | users, roles, user_roles are active |
 | Course Delivery | Strong | courses, modules, lessons are active |
 | Submissions and Progress | Strong with gap | challenge_testcases integration pending |
-| Gamification | Strong with model choice | runtime ranking uses user_xp join |
-| Subscription and Payments | Strong | plan and payment lifecycle is active |
-| Moderation and Notifications | Partial | CRUD-ready, limited user-facing workflows |
+| Gamification | Strong | User XP tracking + persisted leaderboard ranking via rank_position |
+| Subscription and Payments | Strong | Plan and payment lifecycle is active |
+| Moderation and Notifications | Strong | ✅ Full notification inbox + admin moderation interface ready |
 
-## Fields with Limited Practical Usage
+## Fields Implementation Status (Phase 6 Complete)
 
-| Table | Field | Current State | Suggested Direction |
-| ----- | ----- | ------------- | ------------------- |
-| users | google_id | Reserved for future OAuth | Keep if OAuth planned; otherwise remove |
-| users | profile_picture | Reserved for avatar upload | Keep if avatar roadmap exists; otherwise remove |
-| user_roles | assigned_at | Mostly audit metadata | Surface in admin role-history views |
-| instructor_requests | requested_at | Stored but lightly surfaced | Expose in request timeline |
-| instructor_requests | reviewed_at | Stored but lightly surfaced | Expose in review timeline |
-| leaderboard | rank_position | Not used in current runtime model | Persist rankings or remove redundancy |
+| Table | Field | Current State | Status |
+| ----- | ----- | ------------- | ------ |
+| users | google_id | Reserved for future OAuth | Reserved - remove if OAuth not planned |
+| users | profile_picture | Reserved for avatar upload | Reserved - remove if avatar not planned |
+| user_roles | assigned_at | ✅ Now surfaced in admin role CRUD | Complete |
+| instructor_requests | requested_at | ✅ Now displayed in instructor_request.php and admin CRUD | Complete |
+| instructor_requests | reviewed_at | ✅ Now displayed in instructor_request.php and admin CRUD | Complete |
+| leaderboard | rank_position | ✅ Now persisted via updateLeaderboardRank() | Complete |
+| notifications | * (5 fields) | ✅ Full implementation in notifications.php, header.php, dashboard.php | Complete |
+| moderation_reviews | * (6 fields) | ✅ Admin CRUD interface exposed and ready | Exposed |
 
 ## Table-Level Status Matrix
 
@@ -57,21 +60,27 @@ This report summarizes schema-to-code usage across the repository and identifies
 | Admin-only workflow tables | Partial | available via generic CRUD wrappers |
 | Future-facing fields | Partial | valid schema placeholders for roadmap |
 
-## Priority Recommendations
+## Updated Priority Recommendations
 
-### Priority 1: workflow integrity
+### Priority 1: Complete external API integrations (High Value)
 
-1. Integrate challenge_testcases into process_submission.php validation path.
-2. Decide leaderboard strategy: computed rankings only or persisted ranking table.
-3. Confirm moderation and notifications roadmap and implement end-user flow if required.
+1. Integrate Judge0 for challenge_testcases evaluation in process_submission.php.
+2. Integrate Xendit webhooks for payment status reconciliation (payments.paid_at, user_subscriptions.status).
+3. Wire Judge0 execution results into submissions.score and submissions.execution_status.
 
-### Priority 2: schema clarity
+### Priority 2: Expand moderation workflow (Medium Value)
 
-1. Remove roadmap-only fields that are not planned for near-term implementation.
-2. Keep audit timestamps but surface them in appropriate admin views.
-3. Keep CRUD map and admin navigation synchronized when adding modules.
+1. Implement moderator queue and approval/rejection actions in moderation_reviews table.
+2. Surface moderation reviews in admin interface for content moderation workflows.
+3. Add reviewer assignment and response messaging capabilities.
 
-### Priority 3: release hygiene
+### Priority 3: Optional OAuth and profile features (Low Priority)
+
+1. Implement OAuth integration for users.google_id if requested in product roadmap.
+2. Implement profile picture upload/storage for users.profile_picture if requested.
+3. Remove unused fields if they are not planned within 2 release cycles.
+
+### Priority 4: Release hygiene (Ongoing)
 
 1. Re-run markdown diagnostics on generated reports before handoff.
 2. Keep report tables in compact style with lint-safe pipe spacing.
@@ -90,13 +99,23 @@ This report summarizes schema-to-code usage across the repository and identifies
 - Mostly roadmap debt, not runtime breakage.
 - Highest-value debt payoff is testcase-driven evaluation integration.
 
-## Recommended Next Actions
+## Recommended Next Actions (Phase 6 Complete - Roadmap Updated)
 
-1. Implement testcase-driven validation in submission processing.
-2. Add lightweight user-facing notification reads if notifications are retained.
-3. Expand moderation workflow beyond admin CRUD wrappers when product scope requires it.
-4. Integrate Judge0 and map execution outputs into submissions.execution_status and submissions.score.
-5. Integrate Xendit and reconcile payments.payment_status and payments.paid_at via webhooks.
+✅ **Completed in Phase 6:**
+
+- Implemented notifications table with full user-facing inbox (notifications.php, header badges, mark-read actions).
+- Implemented instructor_requests with user submission form and admin CRUD review interface.
+- Persisted leaderboard rankings via updateLeaderboardRank() helper function.
+- Exposed moderation_reviews admin CRUD interface ready for moderator workflows.
+- Updated all timestamp fields to display in admin views and user-facing pages.
+
+**Next Actions (Roadmap):**
+
+1. Integrate Judge0 and map execution outputs into submissions.execution_status and submissions.score.
+2. Integrate Xendit webhooks and reconcile payments.paid_at and user_subscriptions.status via webhook events.
+3. Expand moderation queue workflow and implement moderator approval/rejection actions.
+4. Implement OAuth integration for users.google_id if product roadmap requires it.
+5. Implement profile picture upload for users.profile_picture if product roadmap requires it.
 
 ## Conclusion
 

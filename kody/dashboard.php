@@ -8,6 +8,10 @@ $currentUser = getCurrentUser();
 $dashboardData = getUserDashboard((int) $currentUser['user_id']);
 $user = $dashboardData['user'];
 $enrollments = $dashboardData['enrollments'];
+$notifications = getUserNotifications((int) $currentUser['user_id'], 5);
+$unreadNotificationCount = getUnreadNotificationCount((int) $currentUser['user_id']);
+$roleAssignments = getUserRoleAssignments((int) $currentUser['user_id']);
+$instructorRequests = getInstructorRequestsByUser((int) $currentUser['user_id']);
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -43,6 +47,11 @@ require_once __DIR__ . '/includes/header.php';
     <div class="eyebrow">Status</div>
     <div class="metric"><?php echo htmlspecialchars($user['account_status'] ?? ''); ?></div>
     <div class="card-meta">Account state</div>
+  </div>
+  <div class="info-card">
+    <div class="eyebrow">Notifications</div>
+    <div class="metric"><?php echo (int) $unreadNotificationCount; ?></div>
+    <div class="card-meta">Unread items</div>
   </div>
 </div>
 
@@ -105,6 +114,76 @@ require_once __DIR__ . '/includes/header.php';
     <p>No enrolled courses yet.</p>
     <a class="card-button primary" href="/kody/enroll.php">Start by enrolling in your first course</a>
   <?php endif; ?>
+</section>
+
+<section class="mt-1">
+  <div class="section-heading">
+    <h3>Recent Notifications</h3>
+    <a class="button-link" href="/kody/notifications.php">Open inbox</a>
+  </div>
+  <?php if (count($notifications) > 0): ?>
+    <div class="timeline mt-1">
+      <?php foreach ($notifications as $notification): ?>
+        <div class="timeline-item">
+          <div class="section-heading align-start">
+            <div>
+              <div class="panel-eyebrow">Notification #<?php echo (int) $notification['notification_id']; ?></div>
+              <strong><?php echo htmlspecialchars($notification['message']); ?></strong>
+            </div>
+            <span class="badge <?php echo ((int) $notification['is_read'] === 1) ? 'dark' : 'success'; ?>">
+              <?php echo ((int) $notification['is_read'] === 1) ? 'Read' : 'Unread'; ?>
+            </span>
+          </div>
+          <div class="card-meta mt-04">Created: <?php echo htmlspecialchars($notification['created_at']); ?></div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php else: ?>
+    <p>No notifications yet.</p>
+  <?php endif; ?>
+</section>
+
+<section class="mt-1 split-layout split-2">
+  <div class="subtle-panel">
+    <div class="section-heading">
+      <h3>Role History</h3>
+      <span class="badge info"><?php echo (int) count($roleAssignments); ?> entries</span>
+    </div>
+    <?php if (count($roleAssignments) > 0): ?>
+      <div class="timeline mt-075">
+        <?php foreach ($roleAssignments as $assignment): ?>
+          <div class="timeline-item">
+            <strong><?php echo htmlspecialchars($assignment['role_name']); ?></strong>
+            <div class="card-meta mt-035">Assigned: <?php echo htmlspecialchars($assignment['assigned_at']); ?></div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <p>No role history available.</p>
+    <?php endif; ?>
+  </div>
+
+  <div class="subtle-panel">
+    <div class="section-heading">
+      <h3>Instructor Requests</h3>
+      <a class="button-link" href="/kody/instructor_request.php">Request access</a>
+    </div>
+    <?php if (count($instructorRequests) > 0): ?>
+      <div class="timeline mt-075">
+        <?php foreach ($instructorRequests as $request): ?>
+          <div class="timeline-item">
+            <strong><?php echo htmlspecialchars($request['status']); ?></strong>
+            <div class="card-meta mt-035">Requested: <?php echo htmlspecialchars($request['requested_at']); ?></div>
+            <?php if (!empty($request['reviewed_at'])): ?>
+              <div class="card-meta mt-035">Reviewed: <?php echo htmlspecialchars($request['reviewed_at']); ?></div>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <p>No instructor requests yet.</p>
+    <?php endif; ?>
+  </div>
 </section>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
